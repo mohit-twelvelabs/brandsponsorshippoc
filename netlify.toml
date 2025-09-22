@@ -1,0 +1,17 @@
+[build]
+  # Build configuration for the frontend
+  base = "frontend"
+  publish = "build"
+  command = "CI=false npm run build"
+
+[build.environment]
+  # Set CI to false to prevent ESLint warnings from failing the build
+  CI = "false"
+  # Node.js version
+  NODE_VERSION = "18"
+
+[[redirects]]
+  # Handle client-side routing for SPA
+  from = "/*"
+  to = "/index.html"
+  status = 200

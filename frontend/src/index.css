@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --radius: 0;
+    --background: #f5f5f5;
+    --foreground: #1a1a1a;
+    --card: #FFFFFF;
+    --card-foreground: #f5f5f5;
+    --primary: #5F4FE6;
+    --primary-hover: #4938C2;
+    --primary-foreground: #fff;
+    --secondary: #3a3a3a;
+    --secondary-foreground: #f5f5f5;
+    --muted: #CFCCEA;
+    --muted-foreground: #5B5686;
+    --accent: #FED13B;
+    --accent-foreground: #000000;
+    --destructive: #EF4444;
+    --destructive-foreground: #fff;
+    --border: #3a3a3a;
+}
+
+.dark {
+    --background: #0f0f12;
+    --foreground: #f5f5f5;
+    --card: #1a1a1d;
+    --card-foreground: #eaeaea;
+    --primary: #7b6df5;
+    --primary-hover: #5F4FE6;
+    --primary-foreground: #fff;
+    --secondary: #2a2a2e;
+    --secondary-foreground: #eaeaea;
+    --muted: #3d395a;
+    --muted-foreground: #a49fce;
+    --accent: #FED13B;
+    --accent-foreground: #000;
+    --destructive: #EF4444;
+    --destructive-foreground: #fff;
+    --border: #2e2e32;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  .font-head {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    font-weight: 600;
+  }
+  
+  .font-sans {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+  }
+}
+
+@layer utilities {
+  .shadow {
+    box-shadow: 4px 4px 0 0 var(--border);
+  }
+  .shadow-md {
+    box-shadow: 6px 6px 0 0 var(--border);
+  }
+  .shadow-lg {
+    box-shadow: 8px 8px 0 0 var(--border);
+  }
+  .shadow-none {
+    box-shadow: none;
+  }
+  .outline-hidden {
+    outline: none;
+  }
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* Animation for loading states */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

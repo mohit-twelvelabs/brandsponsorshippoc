@@ -1,0 +1,15 @@
+# Core web framework
+flask>=3.0.0
+flask-cors>=4.0.0
+werkzeug>=3.0.0
+gunicorn>=22.0.0
+
+# AI/ML APIs and processing - let pip resolve compatible versions
+twelvelabs==0.2.4
+openai>=1.40.0
+pydantic>=2.0.0,<3.0.0
+
+# Data processing and utilities
+numpy>=2.0.0
+requests>=2.30.0
+python-dotenv>=1.0.0

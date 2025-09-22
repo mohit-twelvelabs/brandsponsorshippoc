@@ -1,0 +1,18 @@
+# Test without twelvelabs to isolate the pydantic issue
+flask==3.0.3
+flask-cors==4.0.1
+werkzeug==3.0.4
+gunicorn==22.0.0
+
+twelvelabs
+
+# Modern versions with Python 3.13 support
+numpy==2.1.1
+requests==2.32.3
+python-dotenv==1.0.1
+openai==1.55.3
+pydantic==2.9.2
+httpx==0.27.2
+
+# Force refresh of dependencies with updated versions
+# Added httpx pin to prevent compatibility issues

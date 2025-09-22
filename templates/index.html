@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brand Sponsorship ROI Analytics - TwelveLabs</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 3rem 0;
+            color: white;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+
+        .upload-section {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 3rem;
+            text-align: center;
+            margin: 1rem 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #5a67d8;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: #5a67d8;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        .dashboard {
+            display: none;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-value {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .brand-list {
+            margin-top: 1rem;
+        }
+
+        .brand-item {
+            background: #f8f9fa;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .brand-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .brand-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #333;
+        }
+
+        .brand-score {
+            background: #667eea;
+            color: white;
+            padding: 0.2rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .brand-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .brand-metric {
+            text-align: center;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .brand-metric-value {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+
+        .brand-metric-label {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+            color: white;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: white;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .demo-section {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 400px;
+            margin: 1rem 0;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            display: none;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 1rem;
+        }
+
+        .tab {
+            padding: 1rem 2rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            border-bottom-color: #667eea;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .brand-metrics {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                Brand ROI Analytics
+            </div>
+            <div class="nav-buttons">
+                <button class="btn btn-primary" onclick="generateReport()" style="display: none;" id="exportBtn">
+                    <i class="fas fa-download"></i>
+                    Export Report
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="hero">
+            <h1>Brand Sponsorship Measurement & Analysis</h1>
+            <p>Upload any sports/event video for AI-powered brand analysis using TwelveLabs</p>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="upload-section">
+            <h2><i class="fas fa-upload"></i> Upload Video for Analysis</h2>
+            <div class="upload-area" onclick="document.getElementById('videoInput').click()" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                <div class="upload-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <h3>Drag & Drop Video File Here</h3>
+                <p>Or click to browse files</p>
+                <p><small>Supported formats: MP4, AVI, MOV, WMV, FLV, WebM, MKV (Max: 500MB)</small></p>
+            </div>
+            <input type="file" id="videoInput" accept="video/*" style="display: none;" onchange="handleFileSelect(event)">
+            
+            <div class="alert alert-success" id="uploadSuccess">
+                Video uploaded successfully! Analysis in progress...
+            </div>
+            <div class="alert alert-error" id="uploadError">
+                Upload failed. Please try again.
+            </div>
+        </div>
+
+        <!-- Loading Section -->
+        <div class="loading" id="loadingSection">
+            <div class="spinner"></div>
+            <h3>Analyzing Video Content...</h3>
+            <p>TwelveLabs is processing your video for brand detection and contextual analysis</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <p id="loadingStatus">Initializing analysis...</p>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div class="dashboard" id="dashboard">
+            <!-- Executive Summary Card -->
+            <div class="card" style="grid-column: 1 / -1;">
+                <h3><i class="fas fa-chart-pie"></i> Executive Summary</h3>
+                <div id="summaryContent">
+                    <div class="metric">
+                        <span>Event</span>
+                        <span class="metric-value" id="eventTitle">-</span>
+                    </div>
+                    <div class="metric">
+                        <span>Video Duration</span>
+                        <span class="metric-value" id="videoDuration">-</span>
+                    </div>
+                    <div class="metric">
+                        <span>Brands Detected</span>
+                        <span class="metric-value" id="brandsDetected">-</span>
+                    </div>
+                    <div class="metric">
+                        <span>Total Appearances</span>
+                        <span class="metric-value" id="totalAppearances">-</span>
+                    </div>
+                    <div class="metric">
+                        <span>Top Performing Brand</span>
+                        <span class="metric-value" id="topBrand">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Brand Performance Card -->
+            <div class="card" style="grid-column: 1 / -1;">
+                <h3><i class="fas fa-trophy"></i> Brand Performance Analysis</h3>
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab('overview')">Overview</div>
+                    <div class="tab" onclick="switchTab('timeline')">Timeline</div>
+                    <div class="tab" onclick="switchTab('context')">Context Analysis</div>
+                </div>
+                
+                <div class="tab-content active" id="overview">
+                    <div id="brandsList"></div>
+                </div>
+                
+                <div class="tab-content" id="timeline">
+                    <div class="chart-container" id="timelineChart"></div>
+                </div>
+                
+                <div class="tab-content" id="context">
+                    <div class="chart-container" id="contextChart"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let currentAnalysisData = null;
+
+        // File upload handling
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                uploadVideo(file);
+            }
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            const uploadArea = document.querySelector('.upload-area');
+            uploadArea.classList.remove('dragover');
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                uploadVideo(files[0]);
+            }
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            const uploadArea = document.querySelector('.upload-area');
+            uploadArea.classList.add('dragover');
+        }
+
+        function handleDragLeave(event) {
+            const uploadArea = document.querySelector('.upload-area');
+            uploadArea.classList.remove('dragover');
+        }
+
+        // Upload video to server
+        async function uploadVideo(file) {
+            const formData = new FormData();
+            formData.append('video', file);
+
+            try {
+                showLoading();
+                updateLoadingStatus('Uploading video...', 20);
+
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showAlert('uploadSuccess', 'Video uploaded successfully!');
+                    updateLoadingStatus('Processing with TwelveLabs...', 40);
+                    
+                    // Start analysis
+                    analyzeVideo(result.filename);
+                } else {
+                    throw new Error(result.error || 'Upload failed');
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                showAlert('uploadError', error.message);
+                hideLoading();
+            }
+        }
+
+        // Analyze video
+        async function analyzeVideo(filename) {
+            try {
+                updateLoadingStatus('Analyzing video content...', 60);
+
+                const response = await fetch(`/api/analyze/${filename}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    updateLoadingStatus('Analysis complete!', 100);
+                    currentAnalysisData = data;
+                    
+                    setTimeout(() => {
+                        hideLoading();
+                        displayResults(data);
+                    }, 1000);
+                } else {
+                    throw new Error(data.error || 'Analysis failed');
+                }
+            } catch (error) {
+                console.error('Analysis error:', error);
+                showAlert('uploadError', error.message);
+                hideLoading();
+            }
+        }
+
+        // Display analysis results
+        function displayResults(data) {
+            // Update summary
+            document.getElementById('eventTitle').textContent = data.summary.event_title;
+            document.getElementById('videoDuration').textContent = `${data.summary.video_duration_minutes} min`;
+            document.getElementById('brandsDetected').textContent = data.summary.total_brands_detected;
+            document.getElementById('totalAppearances').textContent = data.summary.total_brand_appearances;
+            document.getElementById('topBrand').textContent = data.summary.top_performing_brand || 'N/A';
+
+            // Display brand metrics
+            displayBrandMetrics(data.brand_metrics);
+
+            // Create timeline chart from real data
+            if (data.raw_detections && data.raw_detections.length > 0) {
+                createTimelineChart(data.raw_detections, 'timelineChart');
+            }
+
+            // Show export button
+            document.getElementById('exportBtn').style.display = 'inline-flex';
+
+            // Show dashboard
+            document.getElementById('dashboard').style.display = 'grid';
+            
+            // Scroll to results
+            document.getElementById('dashboard').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Display brand metrics
+        function displayBrandMetrics(brandMetrics) {
+            const container = document.getElementById('brandsList');
+            container.innerHTML = '';
+
+            brandMetrics.forEach((brand, index) => {
+                const brandElement = document.createElement('div');
+                brandElement.className = 'brand-item';
+                brandElement.innerHTML = `
+                    <div class="brand-header">
+                        <div class="brand-name">${brand.brand}</div>
+                        <div class="brand-score">${brand.contextual_value_score}/10</div>
+                    </div>
+                    <div class="brand-metrics">
+                        <div class="brand-metric">
+                            <div class="brand-metric-value">${formatTime(brand.total_exposure_time)}</div>
+                            <div class="brand-metric-label">Exposure Time</div>
+                        </div>
+                        <div class="brand-metric">
+                            <div class="brand-metric-value">${brand.total_appearances}</div>
+                            <div class="brand-metric-label">Appearances</div>
+                        </div>
+                        <div class="brand-metric">
+                            <div class="brand-metric-value">${brand.high_impact_moments}</div>
+                            <div class="brand-metric-label">High Impact</div>
+                        </div>
+                        <div class="brand-metric">
+                            <div class="brand-metric-value">${formatSentiment(brand.sentiment_score)}</div>
+                            <div class="brand-metric-label">Sentiment</div>
+                        </div>
+                        <div class="brand-metric">
+                            <div class="brand-metric-value">${formatNumber(brand.estimated_social_mentions)}</div>
+                            <div class="brand-metric-label">Social Mentions</div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(brandElement);
+            });
+        }
+
+
+        // Create timeline chart from brand appearances
+        function createTimelineChart(brandData, containerId) {
+            if (!brandData || brandData.length === 0) {
+                document.getElementById(containerId).innerHTML = '<p>No timeline data available</p>';
+                return;
+            }
+
+            // Group appearances by brand and create timeline
+            const brandTimelines = {};
+            brandData.forEach(appearance => {
+                const brand = appearance.brand;
+                if (!brandTimelines[brand]) {
+                    brandTimelines[brand] = [];
+                }
+                if (appearance.timeline && appearance.timeline.length === 2) {
+                    const startTime = appearance.timeline[0] / 60; // Convert to minutes
+                    brandTimelines[brand].push(startTime);
+                }
+            });
+
+            // Create traces for each brand
+            const traces = Object.keys(brandTimelines).map(brand => {
+                const times = brandTimelines[brand];
+                const counts = times.map((_, index) => index + 1); // Cumulative count
+                
+                return {
+                    x: times,
+                    y: counts,
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: brand,
+                    line: { width: 3 }
+                };
+            });
+
+            const layout = {
+                title: 'Brand Exposure Timeline',
+                xaxis: { title: 'Time (minutes)' },
+                yaxis: { title: 'Cumulative Brand Appearances' },
+                hovermode: 'x unified'
+            };
+
+            Plotly.newPlot(containerId, traces, layout, { responsive: true });
+        }
+
+        // Utility functions
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function formatSentiment(score) {
+            if (score > 0.5) return 'Very Positive';
+            if (score > 0.2) return 'Positive';
+            if (score > -0.2) return 'Neutral';
+            if (score > -0.5) return 'Negative';
+            return 'Very Negative';
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        function showLoading() {
+            document.getElementById('loadingSection').style.display = 'block';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingSection').style.display = 'none';
+        }
+
+        function updateLoadingStatus(message, progress) {
+            document.getElementById('loadingStatus').textContent = message;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        function showAlert(type, message) {
+            const alert = document.getElementById(type);
+            alert.textContent = message;
+            alert.style.display = 'block';
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Remove active class from all tabs and content
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // Add active class to clicked tab and corresponding content
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+
+        // Generate report
+        async function generateReport() {
+            if (!currentAnalysisData) {
+                showAlert('uploadError', 'No analysis data available. Please upload and analyze a video first.');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/report/pdf');
+                const data = await response.json();
+                
+                showAlert('uploadSuccess', 'Report generation initiated. You will receive an email when ready.');
+            } catch (error) {
+                showAlert('uploadError', 'Failed to generate report');
+            }
+        }
+    </script>
+</body>
+</html>
