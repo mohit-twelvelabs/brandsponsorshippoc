@@ -210,6 +210,7 @@ export interface BrandSearchProps {
 export interface VideoSelectorProps {
   onVideoSelect?: (videoId: string) => void;
   onVideosSelect?: (videoIds: string[]) => void;
+  onStartSingleAnalysis?: () => void;
   onError: (error: string) => void;
   isAnalyzing?: boolean;
   selectedBrands?: string[];

@@ -11,7 +11,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import numpy as np
 from twelvelabs import TwelveLabs
-from openai import OpenAI, OpenAIError, AuthenticationError
+import openai
 from pydantic import BaseModel, Field, field_validator
 from typing import List, Dict, Optional, Literal, Any
 import logging
@@ -38,32 +38,7 @@ ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'}
 
 # OpenAI API configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-
-# Initialize OpenAI client with defensive error handling
-openai_client = None
-try:
-    openai_client = OpenAI(api_key=OPENAI_API_KEY)
-    logger.info("OpenAI client initialized successfully")
-except TypeError as e:
-    if "proxies" in str(e):
-        logger.warning(f"OpenAI client initialization failed due to httpx compatibility issue: {e}")
-        logger.info("Attempting to initialize OpenAI client without problematic arguments...")
-        try:
-            # Try with minimal configuration
-            import httpx
-            # Create a custom http client without the proxies argument
-            http_client = httpx.Client()
-            openai_client = OpenAI(api_key=OPENAI_API_KEY, http_client=http_client)
-            logger.info("OpenAI client initialized successfully with custom http client")
-        except Exception as fallback_error:
-            logger.error(f"Failed to initialize OpenAI client with fallback method: {fallback_error}")
-            openai_client = None
-    else:
-        logger.error(f"OpenAI client initialization failed with unexpected TypeError: {e}")
-        raise
-except Exception as e:
-    logger.error(f"OpenAI client initialization failed: {e}")
-    raise
+openai.api_key = OPENAI_API_KEY
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max file size
@@ -520,12 +495,12 @@ def gather_brand_intelligence(brand_name, enable_web_search=True):
             """
             
             try:
-                if openai_client is None:
+                if not OPENAI_API_KEY:
                     logger.error("OpenAI client is not initialized, skipping brand analysis")
                     brand_info["error"] = "OpenAI client initialization failed"
                     return
                 
-                response = openai_client.chat.completions.create(
+                response = openai.ChatCompletion.create(
                     model="gpt-4",
                     messages=[
                         {"role": "system", "content": "You are a market research analyst. Provide factual, accurate information about companies."},
@@ -554,13 +529,14 @@ def gather_brand_intelligence(brand_name, enable_web_search=True):
                     brand_research = {}
                 brand_info.update(brand_research)
                 
-            except AuthenticationError as auth_error:
-                logger.error(f"OpenAI authentication error: {str(auth_error)}")
-                logger.error("Please check if the OpenAI API key is valid")
-                brand_info["error"] = "OpenAI authentication failed"
-            except OpenAIError as api_error:
-                logger.error(f"OpenAI API error: {str(api_error)}")
-                brand_info["error"] = f"OpenAI API error: {str(api_error)}"
+            except Exception as auth_error:
+                if "authentication" in str(auth_error).lower() or "api_key" in str(auth_error).lower():
+                    logger.error(f"OpenAI authentication error: {str(auth_error)}")
+                    logger.error("Please check if the OpenAI API key is valid")
+                    brand_info["error"] = "OpenAI authentication failed"
+                else:
+                    logger.error(f"OpenAI API error: {str(auth_error)}")
+                    brand_info["error"] = f"OpenAI API error: {str(auth_error)}"
             except json.JSONDecodeError as json_error:
                 logger.error(f"JSON parsing error: {str(json_error)}")
                 brand_info["error"] = "Failed to parse AI response"
@@ -595,12 +571,12 @@ def gather_brand_intelligence(brand_name, enable_web_search=True):
             """
             
             try:
-                if openai_client is None:
+                if not OPENAI_API_KEY:
                     logger.error("OpenAI client is not initialized, skipping news generation")
                     brand_info["recent_news"] = []
                     return
                 
-                news_response = openai_client.chat.completions.create(
+                news_response = openai.ChatCompletion.create(
                     model="gpt-4",
                     messages=[
                         {"role": "system", "content": "You are a business news analyst. Always return valid JSON arrays only."},
@@ -609,13 +585,14 @@ def gather_brand_intelligence(brand_name, enable_web_search=True):
                     temperature=0.3,
                     max_tokens=500
                 )
-            except AuthenticationError:
-                logger.error("OpenAI authentication failed for news generation")
-                brand_info["recent_news"] = []
-                return brand_info
-            except OpenAIError as api_err:
-                logger.error(f"OpenAI API error in news generation: {str(api_err)}")
-                brand_info["recent_news"] = []
+            except Exception as api_err:
+                if "authentication" in str(api_err).lower() or "api_key" in str(api_err).lower():
+                    logger.error("OpenAI authentication failed for news generation")
+                    brand_info["recent_news"] = []
+                    return brand_info
+                else:
+                    logger.error(f"OpenAI API error in news generation: {str(api_err)}")
+                    brand_info["recent_news"] = []
                 return brand_info
             
             if news_response and news_response.choices and len(news_response.choices) > 0:
@@ -656,7 +633,7 @@ def gather_brand_intelligence(brand_name, enable_web_search=True):
             logger.warning(f"Could not parse news JSON for brand {repr(brand_name)}: {je}")
             logger.debug(f"News content that failed to parse: {news_content if 'news_content' in locals() else 'N/A'}")
             brand_info["recent_news"] = []
-        except OpenAIError as oe:
+        except Exception as oe:
             logger.warning(f"OpenAI API error getting news for brand {repr(brand_name)}: {oe}")
             brand_info["recent_news"] = []
         except Exception as e:
@@ -860,7 +837,7 @@ def calculate_ai_contextual_score(brand_data, video_duration, brand_name):
         
         # Call OpenAI for intelligent scoring
         try:
-            if openai_client is None:
+            if not OPENAI_API_KEY:
                 logger.error("OpenAI client is not initialized, using default scoring")
                 return {
                     "overall_score": 75,
@@ -870,7 +847,7 @@ def calculate_ai_contextual_score(brand_data, video_duration, brand_name):
                     "recommendations": ["OpenAI analysis unavailable - using default values"]
                 }
             
-            response = openai_client.chat.completions.create(
+            response = openai.ChatCompletion.create(
                 model="gpt-4",
                 messages=[
                     {"role": "system", "content": "You are a brand sponsorship analytics expert. Always return valid JSON."},
@@ -1003,7 +980,7 @@ def generate_executive_summary(brand_metrics, video_duration, video_title):
         }}
         """
         
-        if openai_client is None:
+        if not OPENAI_API_KEY:
             logger.error("OpenAI client is not initialized, returning default executive summary")
             return {
                 "executive_summary": "OpenAI analysis unavailable - executive summary could not be generated",
@@ -1012,7 +989,7 @@ def generate_executive_summary(brand_metrics, video_duration, video_title):
                 "roi_projection": {"text": "Analysis unavailable", "confidence": "Low"}
             }
         
-        response = openai_client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": "You are a C-level brand strategy consultant specializing in sports sponsorship ROI."},

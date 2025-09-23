@@ -63,11 +63,23 @@ function App() {
   };
 
   // Handler for single video selection
-  const handleVideoSelect = async (videoId: string) => {
+  const handleVideoSelect = (videoId: string) => {
     if (multiVideoMode) return; // Ignore single selection in multi-video mode
     
+    setSelectedVideoIds([videoId]); // Store selected video ID
+    showAlert('success', 'Video selected! Click "Analyze Video" to start analysis.');
+  };
+
+  // Handler for starting single video analysis
+  const handleStartSingleAnalysis = async () => {
+    if (selectedVideoIds.length === 0) {
+      showAlert('error', 'Please select a video for analysis');
+      return;
+    }
+
+    const videoId = selectedVideoIds[0];
     setCurrentStep('analysis');
-    showAlert('success', 'Video selected! Starting analysis...');
+    showAlert('success', 'Starting analysis...');
     
     try {
       // Pass selected brands to the analysis
@@ -237,6 +249,7 @@ function App() {
               <VideoSelector 
                 onVideoSelect={multiVideoMode ? undefined : handleVideoSelect}
                 onVideosSelect={multiVideoMode ? handleVideosSelect : undefined}
+                onStartSingleAnalysis={!multiVideoMode ? handleStartSingleAnalysis : undefined}
                 onError={handleVideoError}
                 isAnalyzing={analysisLoading}
                 selectedBrands={selectedBrands}

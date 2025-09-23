@@ -1867,13 +1867,16 @@ def list_videos():
             if filename == "Unknown" and video.id:
                 filename = f"Video_{video.id[:8]}"
             
-            # Get thumbnail URL for this video
+            # Get thumbnail URL and HLS data for this video
+            hls_data = None
             try:
                 video_details = get_video_details_with_thumbnail(video.id)
-                if video_details and video_details['thumbnail_url']:
-                    thumbnail_url = video_details['thumbnail_url']
+                if video_details:
+                    if video_details['thumbnail_url']:
+                        thumbnail_url = video_details['thumbnail_url']
+                    hls_data = video_details.get('hls')
             except Exception as e:
-                logger.warning(f"Could not get thumbnail for video {video.id}: {str(e)}")
+                logger.warning(f"Could not get video details for video {video.id}: {str(e)}")
             
             video_data = {
                 'id': video.id,
@@ -1881,7 +1884,8 @@ def list_videos():
                 'duration': duration,
                 'created_at': video.created_at if hasattr(video, 'created_at') else None,
                 'thumbnail_url': thumbnail_url,
-                'status': 'ready'
+                'status': 'ready',
+                'hls': hls_data
             }
                 
             videos.append(video_data)
@@ -1910,7 +1914,7 @@ def list_videos():
         }), 500
 
 def get_video_details_with_thumbnail(video_id: str):
-    """Get video details including thumbnail from TwelveLabs API"""
+    """Get video details including thumbnail and HLS video URL from TwelveLabs API"""
     try:
         # Use the SDK to retrieve video details with thumbnails
         video_info = client.indexes.videos.retrieve(
@@ -1918,16 +1922,31 @@ def get_video_details_with_thumbnail(video_id: str):
             video_id=video_id
         )
         
-        # Extract thumbnail URL from hls data
+        # Extract thumbnail URL and HLS video URL from hls data
         thumbnail_url = None
+        video_url = None
+        hls_status = None
+        
         if hasattr(video_info, 'hls') and video_info.hls:
             if hasattr(video_info.hls, 'thumbnail_urls') and video_info.hls.thumbnail_urls:
                 # Get the first thumbnail URL
                 thumbnail_url = video_info.hls.thumbnail_urls[0]
+            
+            if hasattr(video_info.hls, 'video_url'):
+                # Get the HLS video URL for preview
+                video_url = video_info.hls.video_url
+                
+            if hasattr(video_info.hls, 'status'):
+                hls_status = video_info.hls.status
         
         return {
             'id': video_id,
             'thumbnail_url': thumbnail_url,
+            'hls': {
+                'video_url': video_url,
+                'thumbnail_urls': video_info.hls.thumbnail_urls if hasattr(video_info, 'hls') and hasattr(video_info.hls, 'thumbnail_urls') else [],
+                'status': hls_status
+            },
             'video_info': video_info
         }
     except Exception as e:

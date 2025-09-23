@@ -9,11 +9,12 @@ import { Badge } from './ui/Badge';
 import { Alert } from './ui/Alert';
 import { Loader } from './ui/Loader';
 import { Text } from './ui/Text';
-import { Checkbox } from './ui/Checkbox';
+import VideoPreview from './VideoPreview';
 
 const VideoSelector: React.FC<VideoSelectorProps> = ({ 
   onVideoSelect, 
   onVideosSelect, 
+  onStartSingleAnalysis,
   onError, 
   isAnalyzing = false, 
   selectedBrands,
@@ -221,7 +222,7 @@ const VideoSelector: React.FC<VideoSelectorProps> = ({
           )}
           <Button
             onClick={fetchVideos}
-            variant="link"
+            variant="outline"
             size="sm"
             className="ml-3"
             disabled={isAnalyzing}
@@ -268,52 +269,14 @@ const VideoSelector: React.FC<VideoSelectorProps> = ({
             }`}
             onClick={() => !isAnalyzing && handleVideoSelect(video)}
           >
-            {/* Multi-select checkbox */}
-            {multiSelect && (
-              <div className="absolute top-2 left-2 z-10">
-                <div 
-                  className="p-1 bg-white/90 rounded border shadow-sm"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={() => handleVideoSelect(video)}
-                    size="sm"
-                  />
-                </div>
-              </div>
-            )}
 
-            {/* Selection order indicator */}
-            {multiSelect && selectionOrder && (
-              <div className="absolute top-2 right-2 z-10">
-                <div className="w-6 h-6 bg-primary text-white text-xs font-bold rounded-full flex items-center justify-center border-2 border-white shadow-md">
-                  {selectionOrder}
-                </div>
-              </div>
-            )}
             
-            {/* Video thumbnail */}
+            {/* Video preview */}
             <div className="relative mb-3">
-              {video.thumbnail_url ? (
-                <img
-                  src={video.thumbnail_url}
-                    alt={video.filename}
-                  className="w-full h-32 object-cover rounded bg-gray-100"
-                />
-              ) : (
-                <div className="w-full h-32 rounded bg-gray-200 flex items-center justify-center text-gray-500">
-                  <div className="text-center">
-                    <Play className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                    <div className="text-sm">No thumbnail</div>
-                  </div>
-                </div>
-              )}
-              
-              {/* Play overlay */}
-              <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all duration-200 rounded flex items-center justify-center">
-                <Play className="w-8 h-8 text-white opacity-0 hover:opacity-100 transition-opacity duration-200" />
-              </div>
+              <VideoPreview
+                video={video}
+                onError={(error) => console.warn(`Video preview error for ${video.id}:`, error)}
+              />
               
               {/* Duration badge */}
               {video.duration > 0 && (
@@ -387,7 +350,21 @@ const VideoSelector: React.FC<VideoSelectorProps> = ({
             </span>
           </div>
         </Alert>
-        )}
+      )}
+
+      {/* Start analysis button for single video mode */}
+      {!multiSelect && selectedVideo && onStartSingleAnalysis && (
+        <div className="mt-6 flex justify-center">
+          <Button
+            onClick={onStartSingleAnalysis}
+            disabled={isAnalyzing}
+            size="lg"
+            className="px-8"
+          >
+            {isAnalyzing ? 'Starting Analysis...' : 'Analyze Video'}
+          </Button>
+        </div>
+      )}
     </Card>
   );
 };
