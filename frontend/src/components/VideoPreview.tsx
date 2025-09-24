@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, AlertCircle } from 'lucide-react';
 import { Video } from '../types';
+import Hls from 'hls.js';
 
 interface VideoPreviewProps {
   video: Video;
@@ -16,12 +17,14 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
 
   const hasHLS = video.hls?.video_url && video.hls.status === 'COMPLETE';
 
   useEffect(() => {
-    if (videoRef.current && hasHLS) {
+    if (videoRef.current && hasHLS && video.hls?.video_url) {
       const videoElement = videoRef.current;
+      const videoUrl = video.hls.video_url;
       
       const handleLoadedData = () => {
         setIsLoading(false);
@@ -35,15 +38,60 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
         onError?.('Failed to load video preview');
       };
 
+      // Clean up previous HLS instance
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+
+      // Check if HLS is supported
+      if (Hls.isSupported()) {
+        // Use HLS.js for cross-browser support
+        const hls = new Hls({
+          enableWorker: false, // Disable for better compatibility
+          lowLatencyMode: false,
+        });
+        
+        hlsRef.current = hls;
+        
+        hls.loadSource(videoUrl);
+        hls.attachMedia(videoElement);
+        
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          console.log('HLS manifest parsed successfully');
+        });
+        
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          console.error('HLS error:', data);
+          if (data.fatal) {
+            setHasError(true);
+            setIsLoading(false);
+            onError?.(`HLS error: ${data.type}`);
+          }
+        });
+        
+      } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+        // Native HLS support (Safari)
+        videoElement.src = videoUrl;
+      } else {
+        setHasError(true);
+        setIsLoading(false);
+        onError?.('HLS not supported in this browser');
+      }
+
       videoElement.addEventListener('loadeddata', handleLoadedData);
       videoElement.addEventListener('error', handleError);
 
       return () => {
+        if (hlsRef.current) {
+          hlsRef.current.destroy();
+          hlsRef.current = null;
+        }
         videoElement.removeEventListener('loadeddata', handleLoadedData);
         videoElement.removeEventListener('error', handleError);
       };
     }
-  }, [hasHLS, onError]);
+  }, [hasHLS, video.hls?.video_url, onError]);
 
   // Show error message if HLS is not available
   if (!hasHLS) {
@@ -70,12 +118,6 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
         preload="metadata"
         muted
       >
-        {video.hls?.video_url && (
-          <>
-            <source src={video.hls.video_url} type="application/x-mpegURL" />
-            <source src={video.hls.video_url} type="video/mp4" />
-          </>
-        )}
         Your browser does not support the video tag.
       </video>
 
