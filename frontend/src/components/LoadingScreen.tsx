@@ -152,7 +152,7 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
 
         {/* Parallel processing indicator */}
         {(status?.includes('parallel') || (status?.includes('Completed') && status?.includes('of'))) && (
-          <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-orange-50 dark:from-green-950/30 dark:to-orange-950/30 rounded-lg border border-green-200 dark:border-green-800">
+          <div className="mt-6 p-4 bg-gradient-to-r from-green-50 via-orange-50 to-pink-50 dark:from-green-950/30 dark:via-orange-950/30 dark:to-pink-950/30 rounded-lg border border-pink-200 dark:border-pink-800">
             <div className="flex items-center mb-2">
               <Zap className="w-4 h-4 text-blue-600 dark:text-blue-400 mr-2" />
               <Text as="p" className="text-sm font-medium text-blue-800 dark:text-blue-200">

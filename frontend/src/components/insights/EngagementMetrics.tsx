@@ -93,24 +93,24 @@ const EngagementMetrics: React.FC<EngagementMetricsProps> = ({ analysisData }) =
           </Badge>
         </Card>
 
-        <Card className="p-6 bg-blue-50 border-blue-500 hover:translate-y-1 transition-transform">
+        <Card className="p-6 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-400 hover:translate-y-1 transition-transform">
           <div className="flex items-center justify-between mb-3">
             <Text as="h4" className="text-sm font-medium text-muted-foreground">Avg Dwell Time</Text>
-            <Clock className="w-5 h-5 text-blue-500" />
+            <Clock className="w-5 h-5 text-orange-500" />
           </div>
-          <Text as="p" className="text-3xl font-bold text-blue-600">{averageDwellTime}s</Text>
+          <Text as="p" className="text-3xl font-bold text-orange-600">{averageDwellTime}s</Text>
           <Text as="p" className="text-xs text-muted-foreground mt-1">Time spent viewing content</Text>
           <Badge variant="outline" size="sm" className="mt-2 bg-green-100 text-green-700 border-green-300">
             +3.8s vs benchmark (10.5s)
           </Badge>
         </Card>
 
-        <Card className="p-6 bg-orange-50 border-orange-500 hover:translate-y-1 transition-transform">
+        <Card className="p-6 bg-gradient-to-br from-pink-50 to-pink-100 border-pink-400 hover:translate-y-1 transition-transform">
           <div className="flex items-center justify-between mb-3">
             <Text as="h4" className="text-sm font-medium text-muted-foreground">Social Mentions</Text>
-            <MessageCircle className="w-5 h-5 text-orange-500" />
+            <MessageCircle className="w-5 h-5 text-pink-500" />
           </div>
-          <Text as="p" className="text-3xl font-bold text-orange-600">{formatNumber(socialMentions.total)}</Text>
+          <Text as="p" className="text-3xl font-bold text-pink-600">{formatNumber(socialMentions.total)}</Text>
           <Text as="p" className="text-xs text-muted-foreground mt-1">Organic conversations</Text>
           <Badge variant="outline" size="sm" className="mt-2 bg-green-100 text-green-700 border-green-300">
             {socialMentions.positive}% positive sentiment

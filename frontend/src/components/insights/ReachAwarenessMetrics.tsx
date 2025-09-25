@@ -114,48 +114,48 @@ const ReachAwarenessMetrics: React.FC<ReachAwarenessMetricsProps> = ({ analysisD
 
       {/* Key Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="p-6 bg-blue-50 border-blue-500 hover:translate-y-1 transition-transform">
+        <Card className="p-6 bg-gradient-to-br from-green-50 to-green-100 border-green-400 hover:translate-y-1 transition-transform">
           <div className="flex items-center justify-between mb-3">
             <Text as="h4" className="text-sm font-medium text-muted-foreground">Total Reach</Text>
-            <Users className="w-5 h-5 text-blue-500" />
+            <Users className="w-5 h-5 text-green-500" />
           </div>
-          <Text as="p" className="text-3xl font-bold text-blue-600">{formatNumber(estimatedReach)}</Text>
+          <Text as="p" className="text-3xl font-bold text-green-600">{formatNumber(estimatedReach)}</Text>
           <Text as="p" className="text-xs text-muted-foreground mt-1">Unique individuals exposed</Text>
           <Badge variant="outline" size="sm" className="mt-2 bg-green-100 text-green-700 border-green-300">
             +23% vs last event
           </Badge>
         </Card>
 
-        <Card className="p-6 bg-green-50 border-green-500 hover:translate-y-1 transition-transform">
+        <Card className="p-6 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-400 hover:translate-y-1 transition-transform">
           <div className="flex items-center justify-between mb-3">
             <Text as="h4" className="text-sm font-medium text-muted-foreground">Total Impressions</Text>
-            <TrendingUp className="w-5 h-5 text-green-500" />
+            <TrendingUp className="w-5 h-5 text-orange-500" />
           </div>
-          <Text as="p" className="text-3xl font-bold text-green-600">{formatNumber(estimatedImpressions)}</Text>
+          <Text as="p" className="text-3xl font-bold text-orange-600">{formatNumber(estimatedImpressions)}</Text>
           <Text as="p" className="text-xs text-muted-foreground mt-1">Across all touchpoints</Text>
           <Badge variant="outline" size="sm" className="mt-2 bg-green-100 text-green-700 border-green-300">
             +18% vs benchmark
           </Badge>
         </Card>
 
-        <Card className="p-6 bg-orange-50 border-orange-500 hover:translate-y-1 transition-transform">
+        <Card className="p-6 bg-gradient-to-br from-pink-50 to-pink-100 border-pink-400 hover:translate-y-1 transition-transform">
           <div className="flex items-center justify-between mb-3">
             <Text as="h4" className="text-sm font-medium text-muted-foreground">Share of Voice</Text>
-            <BarChart3 className="w-5 h-5 text-orange-500" />
+            <BarChart3 className="w-5 h-5 text-pink-500" />
           </div>
-          <Text as="p" className="text-3xl font-bold text-orange-600">{shareOfVoice}%</Text>
+          <Text as="p" className="text-3xl font-bold text-pink-600">{shareOfVoice}%</Text>
           <Text as="p" className="text-xs text-muted-foreground mt-1">Category dominance</Text>
           <Badge variant="outline" size="sm" className="mt-2 bg-green-100 text-green-700 border-green-300">
             +8% vs category avg
           </Badge>
         </Card>
 
-        <Card className="p-6 bg-orange-50 border-orange-500 hover:translate-y-1 transition-transform">
+        <Card className="p-6 bg-gradient-to-br from-green-100 via-orange-50 to-pink-50 border border-pink-300 hover:translate-y-1 transition-transform">
           <div className="flex items-center justify-between mb-3">
             <Text as="h4" className="text-sm font-medium text-muted-foreground">Frequency</Text>
-            <Eye className="w-5 h-5 text-orange-500" />
+            <Eye className="w-5 h-5 text-purple-500" />
           </div>
-          <Text as="p" className="text-3xl font-bold text-orange-600">{frequency}</Text>
+          <Text as="p" className="text-3xl font-bold bg-gradient-to-r from-green-600 via-orange-600 to-pink-600 bg-clip-text text-transparent">{frequency}</Text>
           <Text as="p" className="text-xs text-muted-foreground mt-1">Avg exposures per person</Text>
           <Badge variant="outline" size="sm" className="mt-2 text-blue-600">
             Optimal range (2-4)

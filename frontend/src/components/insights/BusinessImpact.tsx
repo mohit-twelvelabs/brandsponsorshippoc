@@ -132,10 +132,10 @@ const BusinessImpact: React.FC<BusinessImpactProps> = ({ analysisData }) => {
           <Text as="p" className="text-xs text-green-600 mt-1">-{savings}% cost savings</Text>
         </Card>
 
-        <Card className="p-4 border-l-4 border-green-500">
+        <Card className="p-4 border-l-4 border-pink-500">
           <div className="flex items-center justify-between mb-2">
             <Text as="h4" className="text-sm font-medium text-muted-foreground">Conversion Rate</Text>
-            <MousePointer className="w-4 h-4 text-green-500" />
+            <MousePointer className="w-4 h-4 text-pink-500" />
           </div>
           <Text as="p" className="text-2xl font-bold">{conversionRate}%</Text>
           <Text as="p" className="text-xs text-muted-foreground">{formatNumber(totalConversions)} total conversions</Text>

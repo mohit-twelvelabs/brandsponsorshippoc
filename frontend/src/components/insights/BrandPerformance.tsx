@@ -111,10 +111,10 @@ const BrandPerformance: React.FC<BrandPerformanceProps> = ({ analysisData }) => 
           <Text as="p" className="text-xs text-green-600 mt-1">+{brandRecognition.current - brandRecognition.previous}% vs pre-event</Text>
         </Card>
 
-        <Card className="p-4 border-l-4 border-green-500">
+        <Card className="p-4 border-l-4 border-orange-500">
           <div className="flex items-center justify-between mb-2">
             <Text as="h4" className="text-sm font-medium text-muted-foreground">Purchase Intent Lift</Text>
-            <ShoppingCart className="w-4 h-4 text-green-500" />
+            <ShoppingCart className="w-4 h-4 text-orange-500" />
           </div>
           <Text as="p" className="text-2xl font-bold">+{purchaseIntent.lift}%</Text>
           <Text as="p" className="text-xs text-muted-foreground">Likelihood to purchase</Text>
@@ -242,7 +242,7 @@ const BrandPerformance: React.FC<BrandPerformanceProps> = ({ analysisData }) => 
               <Text as="p" className="text-xs text-muted-foreground">Likely to purchase</Text>
             </div>
 
-            <div className="p-3 bg-green-50 rounded">
+            <div className="p-3 bg-gradient-to-br from-green-50 to-orange-50 rounded">
               <Text as="p" className="font-medium mb-1 text-sm">Baseline</Text>
               <Text as="p" className="text-xl font-bold">{purchaseIntent.baseline}%</Text>
               <Text as="p" className="text-xs text-muted-foreground">Pre-sponsorship</Text>
