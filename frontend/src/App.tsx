@@ -143,7 +143,7 @@ function App() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-gradient-to-r from-primary to-primary-hover border-b-2 shadow-md sticky top-0 z-40">
+      <header className="bg-gradient-to-r from-green-500 via-orange-500 to-pink-500 border-b-2 shadow-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
@@ -194,7 +194,7 @@ function App() {
               <div key={step} className="flex items-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                   currentStep === step 
-                    ? 'bg-primary text-white' 
+                    ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white' 
                     : index < ['brand-search', 'video-selection', 'analysis', 'results'].indexOf(currentStep)
                       ? 'bg-green-500 text-white'
                       : 'bg-gray-200 text-gray-600'
