@@ -138,12 +138,12 @@ const ReachAwarenessMetrics: React.FC<ReachAwarenessMetricsProps> = ({ analysisD
           </Badge>
         </Card>
 
-        <Card className="p-6 bg-purple-50 border-purple-500 hover:translate-y-1 transition-transform">
+        <Card className="p-6 bg-orange-50 border-orange-500 hover:translate-y-1 transition-transform">
           <div className="flex items-center justify-between mb-3">
             <Text as="h4" className="text-sm font-medium text-muted-foreground">Share of Voice</Text>
-            <BarChart3 className="w-5 h-5 text-purple-500" />
+            <BarChart3 className="w-5 h-5 text-orange-500" />
           </div>
-          <Text as="p" className="text-3xl font-bold text-purple-600">{shareOfVoice}%</Text>
+          <Text as="p" className="text-3xl font-bold text-orange-600">{shareOfVoice}%</Text>
           <Text as="p" className="text-xs text-muted-foreground mt-1">Category dominance</Text>
           <Badge variant="outline" size="sm" className="mt-2 bg-green-100 text-green-700 border-green-300">
             +8% vs category avg

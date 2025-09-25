@@ -169,16 +169,16 @@ const ContentQuality: React.FC<ContentQualityProps> = ({ analysisData }) => {
 
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <Target className="w-5 h-5 text-purple-500" />
+                <Target className="w-5 h-5 text-green-600" />
                 <div>
                   <Text as="p" className="font-medium">Premium Content</Text>
                   <Text as="p" className="text-sm text-muted-foreground">vs competitors</Text>
                 </div>
               </div>
               <div className="text-right">
-                <Text as="p" className="text-xl font-bold text-purple-600">{competitiveContext.premiumContent}%</Text>
+                <Text as="p" className="text-xl font-bold text-green-600">{competitiveContext.premiumContent}%</Text>
                 <div className="w-24 bg-muted rounded-full h-2 mt-1">
-                  <div className="bg-purple-500 h-2 rounded-full" style={{ width: `${competitiveContext.premiumContent}%` }}></div>
+                  <div className="bg-green-500 h-2 rounded-full" style={{ width: `${competitiveContext.premiumContent}%` }}></div>
                 </div>
               </div>
             </div>
@@ -239,7 +239,7 @@ const ContentQuality: React.FC<ContentQualityProps> = ({ analysisData }) => {
             </div>
             <div className="w-full bg-muted rounded-full h-3">
               <div 
-                className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full" 
+                className="bg-gradient-to-r from-green-400 to-orange-500 h-3 rounded-full" 
                 style={{ width: `${(contextualRelevance.overallScore / 10) * 100}%` }}
               ></div>
             </div>

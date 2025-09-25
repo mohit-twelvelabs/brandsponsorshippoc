@@ -119,7 +119,7 @@ const BrandMetricsCard: React.FC<BrandMetricsCardProps> = ({ brandMetrics }) => 
 
                 {/* Exposure Quality */}
                 <Card className="text-center p-3 min-h-[90px] flex flex-col justify-center">
-                  <Target className="w-4 h-4 mx-auto text-purple-600 mb-1" />
+                  <Target className="w-4 h-4 mx-auto text-orange-600 mb-1" />
                   <Text as="p" className="text-lg font-bold">
                     {insights?.roi_assessment?.exposure_quality?.toFixed(1) || 'N/A'}
                   </Text>
