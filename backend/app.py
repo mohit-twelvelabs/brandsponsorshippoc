@@ -11,7 +11,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import numpy as np
 from twelvelabs import TwelveLabs
-import openai
+from openai import OpenAI
 from pydantic import BaseModel, Field, field_validator
 from typing import List, Dict, Optional, Literal, Any
 import logging
@@ -38,7 +38,7 @@ ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'}
 
 # OpenAI API configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-openai.api_key = OPENAI_API_KEY
+openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max file size
@@ -500,7 +500,7 @@ def gather_brand_intelligence(brand_name, enable_web_search=True):
                     brand_info["error"] = "OpenAI client initialization failed"
                     return
                 
-                response = openai.ChatCompletion.create(
+                response = openai_client.chat.completions.create(
                     model="gpt-4",
                     messages=[
                         {"role": "system", "content": "You are a market research analyst. Provide factual, accurate information about companies."},
@@ -576,7 +576,7 @@ def gather_brand_intelligence(brand_name, enable_web_search=True):
                     brand_info["recent_news"] = []
                     return
                 
-                news_response = openai.ChatCompletion.create(
+                news_response = openai_client.chat.completions.create(
                     model="gpt-4",
                     messages=[
                         {"role": "system", "content": "You are a business news analyst. Always return valid JSON arrays only."},
@@ -847,7 +847,7 @@ def calculate_ai_contextual_score(brand_data, video_duration, brand_name):
                     "recommendations": ["OpenAI analysis unavailable - using default values"]
                 }
             
-            response = openai.ChatCompletion.create(
+            response = openai_client.chat.completions.create(
                 model="gpt-4",
                 messages=[
                     {"role": "system", "content": "You are a brand sponsorship analytics expert. Always return valid JSON."},
@@ -989,7 +989,7 @@ def generate_executive_summary(brand_metrics, video_duration, video_title):
                 "roi_projection": {"text": "Analysis unavailable", "confidence": "Low"}
             }
         
-        response = openai.ChatCompletion.create(
+        response = openai_client.chat.completions.create(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": "You are a C-level brand strategy consultant specializing in sports sponsorship ROI."},
