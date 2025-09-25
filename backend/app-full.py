@@ -1018,6 +1018,72 @@ def generate_executive_summary(brand_metrics, video_duration, video_title):
         logger.error(f"Executive summary generation error: {str(e)}")
         raise Exception(f"AI analysis required for executive summary generation: {str(e)}")
 
+def generate_competitive_analysis(detected_brands, video_context="sports event"):
+    """Generate comprehensive competitive analysis with market share using AI"""
+    try:
+        if not OPENAI_API_KEY:
+            logger.error("OpenAI client is not initialized, skipping competitive analysis")
+            return []
+        
+        # Prepare the list of detected brands
+        brand_list = [brand for brand in detected_brands if brand]
+        if not brand_list:
+            return []
+        
+        # Create AI prompt for competitive analysis
+        competitive_prompt = f"""
+        You are a market research analyst specializing in competitive intelligence.
+        
+        Based on these brands detected in a {video_context}: {', '.join(brand_list)}
+        
+        Generate a comprehensive competitive analysis including:
+        1. Direct competitors in the same market segment
+        2. Realistic market share percentages for each competitor
+        3. Market prominence/visibility ratings
+        4. Brief positioning for each competitor
+        
+        Include 5-8 realistic competitors (not just the detected brands), ensuring:
+        - Market shares add up to approximately 100%
+        - Names are real companies that compete in these market segments
+        - Prominence reflects actual market position (High/Medium/Low)
+        - Include both detected brands and major competitors not shown in video
+        
+        Return ONLY valid JSON in this exact format:
+        {{
+            "market_category": "Primary market category",
+            "total_market_size": "Estimated market size in billions",
+            "competitors": [
+                {{
+                    "brand": "Company Name",
+                    "market_share": 25.3,
+                    "prominence": "High",
+                    "positioning": "Brief market positioning",
+                    "detected_in_video": true
+                }}
+            ]
+        }}
+        """
+        
+        response = openai_client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a market research analyst. Always return valid JSON with realistic competitive data."},
+                {"role": "user", "content": competitive_prompt}
+            ],
+            temperature=0.3,
+            max_tokens=1200
+        )
+        
+        # Parse the AI response
+        competitive_data = json.loads(response.choices[0].message.content)
+        logger.info(f"Generated competitive analysis for brands: {brand_list}")
+        
+        return competitive_data
+        
+    except Exception as e:
+        logger.error(f"Error generating competitive analysis: {str(e)}")
+        return []
+
 def estimate_social_engagement(brand_data, ai_insights=None):
     """Intelligently estimate social media engagement using AI insights"""
     if not brand_data:
@@ -1859,6 +1925,10 @@ def combine_video_analyses(individual_analyses, video_ids):
         top_brand = combined_brand_list[0]['brand']
         top_brand_score = combined_brand_list[0]['contextual_value_score']
     
+    # Generate competitive analysis for combined brands
+    detected_brands = [brand['brand'] for brand in combined_brand_list]
+    competitive_analysis = generate_competitive_analysis(detected_brands, "multi-video sports analysis")
+    
     # Create combined summary
     combined_summary = {
         'total_videos': len(video_ids),
@@ -1875,6 +1945,7 @@ def combine_video_analyses(individual_analyses, video_ids):
         'combined_summary': combined_summary,
         'combined_brand_metrics': combined_brand_list,
         'raw_detections': all_detections,  # Include temporal-offset raw detections for timeline charts
+        'competitive_analysis': competitive_analysis,  # AI-generated competitive data for multi-video
         'individual_analyses': individual_analyses,
         'video_ids': video_ids,
         'analysis_timestamp': datetime.now().isoformat()
@@ -2507,6 +2578,10 @@ def analyze_video(video_id):
         # Generate executive AI summary
         executive_insights = generate_executive_summary(brand_metrics, video_duration, video_title)
         
+        # Generate AI-powered competitive analysis
+        detected_brands = [brand['brand'] for brand in brand_metrics]
+        competitive_analysis = generate_competitive_analysis(detected_brands, "sports event")
+        
         summary = {
             'event_title': f"Brand Sponsorship Analysis - {video_title}",
             'analysis_date': datetime.now().isoformat(),
@@ -2541,6 +2616,7 @@ def analyze_video(video_id):
             'summary': summary,
             'brand_metrics': brand_metrics,
             'raw_detections': all_appearances,  # Now an array of appearances
+            'competitive_analysis': competitive_analysis,  # AI-generated competitive data
             'video_id': video_id,
             'analysis_timestamp': datetime.now().isoformat()
         }

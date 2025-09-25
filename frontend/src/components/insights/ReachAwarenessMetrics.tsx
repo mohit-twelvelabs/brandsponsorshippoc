@@ -36,23 +36,49 @@ const ReachAwarenessMetrics: React.FC<ReachAwarenessMetricsProps> = ({ analysisD
   const shareOfVoice = topBrand ? Math.round((topBrand.total_exposure_time / totalExposureTime) * 100) : 0;
   const frequency = Math.round((totalAppearances / totalBrands) * 10) / 10;
   
-  // Generate competitor analysis from brand metrics
-  const realCompetitors = analysisData.brand_metrics.slice(1, 4).map((brand: any, index: number) => ({
-    brand: brand.brand,
-    mentions: brand.total_appearances,
-    prominence: brand.avg_prominence > 0.7 ? 'High' : brand.avg_prominence > 0.4 ? 'Medium' : 'Low'
-  }));
+  // Use AI-generated competitive analysis if available, otherwise fall back to detected brands
+  const aiCompetitiveData = analysisData.competitive_analysis;
+  const hasAICompetitors = aiCompetitiveData && aiCompetitiveData.competitors && aiCompetitiveData.competitors.length > 0;
+  
+  let competitorMentions = [];
+  let hasRealCompetitors = false;
+  
+  if (hasAICompetitors) {
+    // Use AI-generated competitor data with market share
+    competitorMentions = aiCompetitiveData.competitors.map((competitor: any) => ({
+      brand: competitor.brand,
+      mentions: competitor.detected_in_video ? 
+        (analysisData.brand_metrics.find((b: any) => b.brand === competitor.brand)?.total_appearances || 1) : 
+        Math.round(competitor.market_share * 10), // Convert market share to mention-like number
+      prominence: competitor.prominence,
+      exposureTime: competitor.detected_in_video ? 
+        (analysisData.brand_metrics.find((b: any) => b.brand === competitor.brand)?.total_exposure_time || 0) : 
+        competitor.market_share * 2, // Estimated exposure based on market share
+      marketShare: competitor.market_share,
+      positioning: competitor.positioning,
+      detectedInVideo: competitor.detected_in_video
+    }));
+    hasRealCompetitors = true;
+  } else {
+    // Fallback to detected brands only
+    const competitors = analysisData.brand_metrics.slice(1).map((brand: any, index: number) => ({
+      brand: brand.brand,
+      mentions: brand.total_appearances,
+      prominence: brand.avg_prominence > 0.7 ? 'High' : brand.avg_prominence > 0.4 ? 'Medium' : 'Low',
+      exposureTime: brand.total_exposure_time,
+      viewerAttention: brand.avg_viewer_attention,
+      contextualScore: brand.contextual_value_score,
+      detectedInVideo: true
+    }));
 
-  // Add fallback competitors if we don't have enough real data
-  const fallbackCompetitors = [
-    { brand: 'Competitor A', mentions: Math.round(totalAppearances * 0.6), prominence: 'Medium' },
-    { brand: 'Competitor B', mentions: Math.round(totalAppearances * 0.4), prominence: 'Low' },
-    { brand: 'Competitor C', mentions: Math.round(totalAppearances * 0.3), prominence: 'Low' }
-  ];
+    // Sort competitors by total exposure time and take top 5
+    competitorMentions = competitors
+      .sort((a: any, b: any) => b.exposureTime - a.exposureTime)
+      .slice(0, 5)
+      .filter((comp: any) => comp.mentions > 0); // Only show competitors with actual mentions
 
-  const competitorMentions = realCompetitors.length > 0 
-    ? realCompetitors 
-    : fallbackCompetitors.slice(0, 3);
+    hasRealCompetitors = competitorMentions.length > 0;
+  }
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -129,31 +155,83 @@ const ReachAwarenessMetrics: React.FC<ReachAwarenessMetricsProps> = ({ analysisD
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Competitive Mention Analysis */}
         <Card className="p-4">
-          <Text as="h4" className="font-medium mb-3">Competitive Mention Analysis</Text>
-          <div className="space-y-2">
-            {competitorMentions.map((competitor: any, index: number) => (
-              <div key={index} className="flex items-center justify-between p-2 bg-muted/10 rounded">
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 bg-primary/10 rounded flex items-center justify-center">
-                    <span className="text-xs font-medium">{competitor.brand.charAt(0)}</span>
+          <div className="flex items-center justify-between mb-3">
+            <Text as="h4" className="font-medium">Competitive Market Analysis</Text>
+            <Text as="p" className="text-xs text-muted-foreground">
+              {hasAICompetitors ? `AI-powered market intelligence` : 
+               hasRealCompetitors ? `${competitorMentions.length} competitors detected` : 'Based on video analysis'}
+            </Text>
+          </div>
+          
+          {hasRealCompetitors ? (
+            <div className="space-y-3">
+              {competitorMentions.map((competitor: any, index: number) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-muted/10 rounded-lg border">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center border">
+                      <span className="text-xs font-medium text-primary">{competitor.brand.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <div>
+                      <Text as="p" className="text-sm font-medium">{competitor.brand}</Text>
+                      <div className="flex items-center space-x-4 text-xs text-muted-foreground mt-1">
+                        {competitor.marketShare ? (
+                          <>
+                            <span>{competitor.marketShare}% market share</span>
+                            <span>•</span>
+                            <span>{competitor.detectedInVideo ? 'In video' : 'Market competitor'}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>{competitor.mentions} mentions</span>
+                            <span>•</span>
+                            <span>{Math.round(competitor.exposureTime)}s exposure</span>
+                            {competitor.contextualScore && (
+                              <>
+                                <span>•</span>
+                                <span>Quality: {competitor.contextualScore.toFixed(1)}/10</span>
+                              </>
+                            )}
+                          </>
+                        )}
+                      </div>
+                      {competitor.positioning && (
+                        <Text as="p" className="text-xs text-muted-foreground mt-1 italic">
+                          {competitor.positioning}
+                        </Text>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <Text as="p" className="text-sm font-medium">{competitor.brand}</Text>
-                    <Text as="p" className="text-xs text-muted-foreground">{competitor.mentions} mentions</Text>
+                  <div className="flex items-center space-x-2">
+                    {competitor.detectedInVideo && (
+                      <Badge variant="outline" size="sm" className="bg-blue-100 text-blue-700 border-blue-300">
+                        In Video
+                      </Badge>
+                    )}
+                    <Badge variant={
+                      competitor.prominence === 'High' ? 'solid' :
+                      competitor.prominence === 'Medium' ? 'outline' : 'outline'
+                    } size="sm" className={
+                      competitor.prominence === 'High' ? 'bg-red-100 text-red-700 border-red-300' :
+                      competitor.prominence === 'Medium' ? 'bg-orange-100 text-orange-700 border-orange-300' : 
+                      'bg-gray-100 text-gray-700 border-gray-300'
+                    }>
+                      {competitor.prominence}
+                    </Badge>
                   </div>
                 </div>
-                <Badge variant={
-                  competitor.prominence === 'High' ? 'solid' :
-                  competitor.prominence === 'Medium' ? 'outline' : 'outline'
-                } size="sm" className={
-                  competitor.prominence === 'High' ? 'text-white' :
-                  competitor.prominence === 'Medium' ? 'text-orange-700 border-orange-300 bg-orange-50' : 'text-gray-700 border-gray-300'
-                }>
-                  {competitor.prominence}
-                </Badge>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <div className="w-12 h-12 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Users className="w-6 h-6 text-muted-foreground" />
               </div>
-            ))}
-          </div>
+              <Text as="p" className="text-sm font-medium text-muted-foreground mb-1">No competitors detected</Text>
+              <Text as="p" className="text-xs text-muted-foreground">
+                Upload videos with multiple brands to see competitive analysis
+              </Text>
+            </div>
+          )}
         </Card>
 
         {/* Reach Breakdown Chart */}
