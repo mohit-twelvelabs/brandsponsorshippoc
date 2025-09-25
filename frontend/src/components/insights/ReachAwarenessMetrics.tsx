@@ -42,9 +42,11 @@ const ReachAwarenessMetrics: React.FC<ReachAwarenessMetricsProps> = ({ analysisD
   
   let competitorMentions = [];
   let hasRealCompetitors = false;
+  let analysisType = 'video-only';
   
   if (hasAICompetitors) {
     // Use AI-generated competitor data with market share
+    analysisType = 'ai-powered';
     competitorMentions = aiCompetitiveData.competitors.map((competitor: any) => ({
       brand: competitor.brand,
       mentions: competitor.detected_in_video ? 
@@ -58,9 +60,21 @@ const ReachAwarenessMetrics: React.FC<ReachAwarenessMetricsProps> = ({ analysisD
       positioning: competitor.positioning,
       detectedInVideo: competitor.detected_in_video
     }));
-    hasRealCompetitors = true;
+    
+    // Filter out competitors with 0 market share or invalid data
+    competitorMentions = competitorMentions.filter((comp: any) => 
+      comp.marketShare > 0 && comp.brand && comp.brand.trim() !== ''
+    );
+    
+    // Sort by market share (descending) and take top 8
+    competitorMentions = competitorMentions
+      .sort((a: any, b: any) => (b.marketShare || 0) - (a.marketShare || 0))
+      .slice(0, 8);
+    
+    hasRealCompetitors = competitorMentions.length > 0;
   } else {
-    // Fallback to detected brands only
+    // Fallback to detected brands only (for cases where AI is not available)
+    analysisType = 'video-only';
     const competitors = analysisData.brand_metrics.slice(1).map((brand: any, index: number) => ({
       brand: brand.brand,
       mentions: brand.total_appearances,
@@ -158,8 +172,8 @@ const ReachAwarenessMetrics: React.FC<ReachAwarenessMetricsProps> = ({ analysisD
           <div className="flex items-center justify-between mb-3">
             <Text as="h4" className="font-medium">Competitive Market Analysis</Text>
             <Text as="p" className="text-xs text-muted-foreground">
-              {hasAICompetitors ? `AI-powered market intelligence` : 
-               hasRealCompetitors ? `${competitorMentions.length} competitors detected` : 'Based on video analysis'}
+              {analysisType === 'ai-powered' ? `AI market intelligence • ${competitorMentions.length} competitors` : 
+               hasRealCompetitors ? `${competitorMentions.length} competitors detected in video` : 'Based on video analysis'}
             </Text>
           </div>
           
@@ -226,9 +240,13 @@ const ReachAwarenessMetrics: React.FC<ReachAwarenessMetricsProps> = ({ analysisD
               <div className="w-12 h-12 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Users className="w-6 h-6 text-muted-foreground" />
               </div>
-              <Text as="p" className="text-sm font-medium text-muted-foreground mb-1">No competitors detected</Text>
+              <Text as="p" className="text-sm font-medium text-muted-foreground mb-1">
+                {analysisType === 'ai-powered' ? 'Competitive analysis unavailable' : 'No competitors detected in video'}
+              </Text>
               <Text as="p" className="text-xs text-muted-foreground">
-                Upload videos with multiple brands to see competitive analysis
+                {analysisType === 'ai-powered' ? 
+                  'AI competitive analysis temporarily unavailable' : 
+                  'AI will analyze market competitors for any detected brand'}
               </Text>
             </div>
           )}

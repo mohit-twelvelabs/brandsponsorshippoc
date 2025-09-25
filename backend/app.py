@@ -1021,19 +1021,28 @@ def generate_competitive_analysis(detected_brands, video_context="sports event")
         competitive_prompt = f"""
         You are a market research analyst specializing in competitive intelligence.
         
-        Based on these brands detected in a {video_context}: {', '.join(brand_list)}
+        TASK: Analyze the competitive landscape for brands detected in a {video_context}.
         
-        Generate a comprehensive competitive analysis including:
-        1. Direct competitors in the same market segment
-        2. Realistic market share percentages for each competitor
-        3. Market prominence/visibility ratings
-        4. Brief positioning for each competitor
+        DETECTED BRANDS: {', '.join(brand_list)}
         
-        Include 5-8 realistic competitors (not just the detected brands), ensuring:
-        - Market shares add up to approximately 100%
-        - Names are real companies that compete in these market segments
-        - Prominence reflects actual market position (High/Medium/Low)
-        - Include both detected brands and major competitors not shown in video
+        INSTRUCTIONS:
+        - Identify the primary market category for these brands
+        - Research the competitive landscape in this market
+        - Include ALL major competitors in the market segment (not just detected brands)
+        - Generate realistic market share data based on actual market position
+        - Even if only ONE brand was detected, find 5-8 major competitors in that market
+        
+        REQUIREMENTS:
+        1. Include the detected brand(s) with "detected_in_video": true
+        2. Add 4-7 major market competitors with "detected_in_video": false
+        3. Market shares should be realistic and sum to ~100%
+        4. Prominence levels should reflect actual market position
+        5. Positioning should be brief but distinctive
+        
+        EXAMPLE SCENARIOS:
+        - If Nike detected → include Adidas, Under Armour, Puma, New Balance, etc.
+        - If Coca-Cola detected → include Pepsi, Dr Pepper, Monster, Red Bull, etc.
+        - If Mercedes detected → include BMW, Audi, Lexus, Acura, etc.
         
         Return ONLY valid JSON in this exact format:
         {{
@@ -1063,12 +1072,20 @@ def generate_competitive_analysis(detected_brands, video_context="sports event")
         
         # Parse the AI response
         competitive_data = json.loads(response.choices[0].message.content)
-        logger.info(f"Generated competitive analysis for brands: {brand_list}")
         
-        return competitive_data
+        # Validate the response structure
+        if 'competitors' in competitive_data and len(competitive_data['competitors']) > 0:
+            logger.info(f"Generated competitive analysis for brands: {brand_list} - {len(competitive_data['competitors'])} competitors found")
+            return competitive_data
+        else:
+            logger.warning(f"AI generated empty competitive analysis for brands: {brand_list}")
+            return []
         
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse AI competitive analysis JSON: {str(e)}")
+        return []
     except Exception as e:
-        logger.error(f"Error generating competitive analysis: {str(e)}")
+        logger.error(f"Error generating competitive analysis for brands {brand_list}: {str(e)}")
         return []
 
 def estimate_social_engagement(brand_data, ai_insights=None):
@@ -2493,7 +2510,14 @@ def analyze_video(video_id):
         
         # Generate AI-powered competitive analysis
         detected_brands = [brand['brand'] for brand in brand_metrics]
+        logger.info(f"Generating competitive analysis for detected brands: {detected_brands}")
         competitive_analysis = generate_competitive_analysis(detected_brands, "sports event")
+        
+        if competitive_analysis and 'competitors' in competitive_analysis:
+            logger.info(f"Competitive analysis generated successfully with {len(competitive_analysis['competitors'])} competitors")
+        else:
+            logger.warning("Competitive analysis generation failed or returned empty results")
+            competitive_analysis = {}  # Ensure it's not None
         
         summary = {
             'event_title': f"Brand Sponsorship Analysis - {video_title}",
