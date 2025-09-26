@@ -1043,6 +1043,7 @@ def generate_competitive_analysis(detected_brands, video_context="sports event")
         - If Nike detected → include Adidas, Under Armour, Puma, New Balance, etc.
         - If Coca-Cola detected → include Pepsi, Dr Pepper, Monster, Red Bull, etc.
         - If Mercedes detected → include BMW, Audi, Lexus, Acura, etc.
+        - If Apple detected → include Samsung, Google, Microsoft, etc. 
         
         Return ONLY valid JSON in this exact format:
         {{

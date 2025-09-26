@@ -161,7 +161,7 @@ function App() {
                   variant="secondary"
                   size="sm"
                   onClick={handleGoBack}
-                  className="flex items-center"
+                  className="flex items-center bg-orange-500 text-white hover:bg-orange-600 border-orange-500 hover:border-orange-600"
                   disabled={analysisLoading}
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
