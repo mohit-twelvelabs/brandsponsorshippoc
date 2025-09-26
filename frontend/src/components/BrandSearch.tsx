@@ -164,10 +164,10 @@ const BrandSearch: React.FC<BrandSearchProps> = ({
     <Card className="w-full p-6">
       <Card.Header className="p-0 mb-6">
         <Card.Title className="flex items-center">
-          <Building2 className="w-6 h-6 mr-2 text-primary" />
+          <Building2 className="w-6 h-6 mr-2 text-black" />
           Select Brands to Analyze
         </Card.Title>
-        <Text as="p" className="text-muted-foreground mt-2">
+        <Text as="p" className="text-black mt-2">
           Search for and select the specific brands you want to analyze for sponsorship ROI in your video.
         </Text>
       </Card.Header>
@@ -175,7 +175,7 @@ const BrandSearch: React.FC<BrandSearchProps> = ({
       {/* Search Input */}
       <div className="relative mb-6">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-black z-10" />
           <Input
             ref={searchInputRef}
             type="text"
@@ -239,10 +239,10 @@ const BrandSearch: React.FC<BrandSearchProps> = ({
                         {suggestion.name}
                       </Text>
                       {selectedBrands.includes(suggestion.name) && (
-                        <CheckCircle2 className="w-4 h-4 ml-2 text-primary" />
+                        <CheckCircle2 className="w-4 h-4 ml-2 text-black" />
                       )}
                     </div>
-                    <Text as="p" className="text-xs text-muted-foreground mt-1">
+                    <Text as="p" className="text-xs text-black mt-1">
                       {suggestion.description}
                     </Text>
                   </div>
@@ -287,7 +287,7 @@ const BrandSearch: React.FC<BrandSearchProps> = ({
 
       {/* Action Buttons */}
       <div className="flex justify-between items-center">
-        <Text as="p" className="text-sm text-muted-foreground">
+        <Text as="p" className="text-sm text-black">
           {selectedBrands.length === 0 
             ? 'Select at least one brand to continue' 
             : `${selectedBrands.length} brand${selectedBrands.length > 1 ? 's' : ''} selected`
