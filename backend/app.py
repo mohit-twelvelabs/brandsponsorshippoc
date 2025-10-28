@@ -1987,13 +1987,24 @@ def list_videos():
             if filename == "Unknown" and video.id:
                 filename = f"Video_{video.id[:8]}"
             
-            # Get thumbnail URL for this video
+            # Get thumbnail URL and HLS info for this video
+            hls_data = None
             try:
                 video_details = get_video_details_with_thumbnail(video.id)
                 if video_details and video_details['thumbnail_url']:
                     thumbnail_url = video_details['thumbnail_url']
+                
+                # Extract HLS information if available
+                if video_details and video_details.get('video_info'):
+                    video_info = video_details['video_info']
+                    if hasattr(video_info, 'hls') and video_info.hls:
+                        hls_data = {
+                            'video_url': video_info.hls.video_url if hasattr(video_info.hls, 'video_url') else None,
+                            'thumbnail_urls': video_info.hls.thumbnail_urls if hasattr(video_info.hls, 'thumbnail_urls') else [],
+                            'status': video_info.hls.status if hasattr(video_info.hls, 'status') else None
+                        }
             except Exception as e:
-                logger.warning(f"Could not get thumbnail for video {video.id}: {str(e)}")
+                logger.warning(f"Could not get thumbnail/HLS info for video {video.id}: {str(e)}")
             
             video_data = {
                 'id': video.id,
@@ -2001,6 +2012,7 @@ def list_videos():
                 'duration': duration,
                 'created_at': video.created_at if hasattr(video, 'created_at') else None,
                 'thumbnail_url': thumbnail_url,
+                'hls': hls_data,
                 'status': 'ready'
             }
                 
