@@ -133,7 +133,7 @@ Two phases inside one card:
 
 1. **Enter / pick account**
    - Masked text input for API key, "Connect" button.
-   - Optional "Use default demo account" button — rendered only when `health.has_default_account === true` *and* no saved accounts exist.
+   - Optional "Use default demo account" button — rendered only when `health.has_default_account === true` *and* no saved accounts exist. Clicking it sets `activeAccountId = null` (no localStorage account record) and advances to the brand step; subsequent API calls omit auth headers and the backend uses both env vars. If env `TWELVELABS_INDEX_ID` is missing the next call 400s and the user is bounced back to Connect with an inline message.
    - List of saved accounts: `nickname · indexName` with [Switch] / [Remove] buttons.
 2. **Pick index** (appears after key validates via `listIndexes`)
    - Radio list of indexes (`name • N videos`).
@@ -153,7 +153,7 @@ On save: persist via `accountStorage.saveAccount`, set active, advance to brand 
 
 **`BrandSearch.tsx` enhancements:**
 - "Recently analyzed" row above popular brands. Reads from `localStorage["tl-brc-recent-brands:" + activeAccountId]`. One-click re-select.
-- "Paste list" affordance — accepts comma/newline-separated brands, splits on `[,\n]`, trims, dedupes against current selection, adds.
+- "Paste list" affordance — small button next to "Clear all" that toggles a textarea + [Add] / [Cancel] buttons. Input is split on `[,\n]`, trimmed, deduped against current selection, then added as chips. Textarea collapses on Add/Cancel.
 - "Clear all" button next to the selected-brands chip row.
 - On analysis start (handled in `App.tsx`), persist the current `selectedBrands` to the recent-brands localStorage key for the active account.
 
@@ -207,7 +207,7 @@ Return visit
 | Network error on indexes             | `GET /api/indexes` → network   | Inline error with retry button                                                    |
 | Account has no indexes               | `GET /api/indexes` → `[]`      | "This account has no indexes. Create one at twelvelabs.io first."                 |
 | Saved key revoked since last visit   | Any `/api/*` → 401             | Toast: "Account credentials expired — reconnect." Active account cleared, redirect to Connect. |
-| Index deleted since last visit       | `/api/videos` → 404 on index   | Same as above                                                                     |
+| Index deleted since last visit       | `/api/videos` → 404 on index   | Toast: "Saved index no longer exists. Pick a different index." `indexId` cleared on the active account; redirect to Connect's index-picker phase with the saved API key prefilled. |
 | No env default + no user key + deep link | Any `/api/*` → 401         | Toast, redirect to Connect                                                        |
 | Background analysis: API key invalid mid-job | Worker thread → SDK 401 | Job status set to `failed` with `error: "auth_expired"`; frontend polling surfaces toast + reconnect. |
 
