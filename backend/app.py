@@ -1192,19 +1192,26 @@ def start_analysis(video_id):
         # Get selected brands from request body
         data = request.get_json() or {}
         selected_brands = data.get('brands', [])
-        
+
+        api_key = request.headers.get("X-TL-Api-Key") or os.getenv("TWELVELABS_API_KEY", "")
+        index_id = request.headers.get("X-TL-Index-Id") or os.getenv("TWELVELABS_INDEX_ID", "")
+        if not api_key:
+            return jsonify({'error': 'Missing TwelveLabs API key'}), 401
+        if not index_id:
+            return jsonify({'error': 'Missing TwelveLabs index ID'}), 400
+
         logger.info(f"Starting analysis for video {video_id} with selected brands: {selected_brands}")
-        
+
         # Generate job ID
         job_id = f"{video_id}-{int(datetime.now().timestamp() * 1000)}"
-        
+
         # Create job
         analysis_status.create_job(job_id)
-        
+
         # Start analysis in background with selected brands
         analysis_thread = threading.Thread(
             target=analyze_video_with_progress,
-            args=(video_id, job_id, selected_brands)
+            args=(video_id, job_id, selected_brands, api_key, index_id)
         )
         analysis_thread.daemon = True
         analysis_thread.start()
@@ -1232,11 +1239,18 @@ def get_analysis_status(job_id):
     
     return jsonify(status)
 
-def analyze_video_with_progress(video_id: str, job_id: str, selected_brands: list = None):
+def analyze_video_with_progress(video_id: str, job_id: str, selected_brands: list = None, api_key: str = None, index_id: str = None):
     """Analyze video with progress updates"""
     try:
         logger.info(f"Starting progressive analysis for video: {video_id}, job: {job_id}")
-        
+
+        # Build a per-job TL client so background threads don't share request state.
+        if not api_key:
+            api_key = os.getenv("TWELVELABS_API_KEY", "")
+        if not index_id:
+            index_id = os.getenv("TWELVELABS_INDEX_ID", "")
+        tl_client = TwelveLabs(api_key=api_key)
+
         # Update job status
         analysis_status.update_job(job_id, {
             'status': 'processing',
@@ -1347,7 +1361,7 @@ def analyze_video_with_progress(video_id: str, job_id: str, selected_brands: lis
         
         # Get brand appearances using TwelveLabs
         logger.info("Getting brand appearances from TwelveLabs...")
-        analysis_response = client.analyze(
+        analysis_response = tl_client.analyze(
             video_id=video_id,
             prompt=brand_analysis_prompt
         )
@@ -1391,8 +1405,8 @@ def analyze_video_with_progress(video_id: str, job_id: str, selected_brands: lis
         video_duration = 300  # Default 5 minutes
         try:
             # Use the correct API to get video metadata
-            video_info = client.indexes.videos.retrieve(
-                index_id=INDEX_ID,
+            video_info = tl_client.indexes.videos.retrieve(
+                index_id=index_id,
                 video_id=video_id
             )
             
