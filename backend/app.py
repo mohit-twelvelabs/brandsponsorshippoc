@@ -1628,22 +1628,29 @@ def start_multi_video_analysis():
         data = request.get_json() or {}
         video_ids = data.get('video_ids', [])
         selected_brands = data.get('brands', [])
-        
+
         if not video_ids:
             return jsonify({'error': 'No video IDs provided'}), 400
-        
+
+        api_key = request.headers.get("X-TL-Api-Key") or os.getenv("TWELVELABS_API_KEY", "")
+        index_id = request.headers.get("X-TL-Index-Id") or os.getenv("TWELVELABS_INDEX_ID", "")
+        if not api_key:
+            return jsonify({'error': 'Missing TwelveLabs API key'}), 401
+        if not index_id:
+            return jsonify({'error': 'Missing TwelveLabs index ID'}), 400
+
         logger.info(f"Starting multi-video analysis for videos {video_ids} with selected brands: {selected_brands}")
-        
+
         # Generate job ID for multi-video analysis
         job_id = f"multi-{'-'.join(video_ids[:3])}-{int(datetime.now().timestamp() * 1000)}"
-        
+
         # Create job
         analysis_status.create_job(job_id)
-        
+
         # Start multi-video analysis in background
         analysis_thread = threading.Thread(
             target=analyze_multiple_videos_with_progress,
-            args=(video_ids, job_id, selected_brands)
+            args=(video_ids, job_id, selected_brands, api_key, index_id)
         )
         analysis_thread.daemon = True
         analysis_thread.start()
@@ -1662,15 +1669,15 @@ def start_multi_video_analysis():
         logger.error(f"Error starting multi-video analysis: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-def analyze_single_video_parallel(video_id: str, selected_brands: list = None):
+def analyze_single_video_parallel(video_id: str, selected_brands: list = None, api_key: str = None, index_id: str = None):
     """Helper function to analyze a single video for parallel processing"""
     try:
         # Create a temporary job ID for individual video analysis
         temp_job_id = f"{video_id}-temp-{int(datetime.now().timestamp() * 1000)}"
         analysis_status.create_job(temp_job_id)
-        
+
         # Analyze individual video
-        analyze_video_with_progress(video_id, temp_job_id, selected_brands)
+        analyze_video_with_progress(video_id, temp_job_id, selected_brands, api_key, index_id)
         
         # Wait for analysis to complete and get results
         while True:
@@ -1687,7 +1694,7 @@ def analyze_single_video_parallel(video_id: str, selected_brands: list = None):
         logger.error(f"Error analyzing video {video_id}: {str(e)}")
         return {'success': False, 'error': str(e), 'video_id': video_id}
 
-def analyze_multiple_videos_with_progress(video_ids: list, job_id: str, selected_brands: list = None):
+def analyze_multiple_videos_with_progress(video_ids: list, job_id: str, selected_brands: list = None, api_key: str = None, index_id: str = None):
     """Analyze multiple videos in parallel with progress updates and combine results"""
     try:
         logger.info(f"Starting PARALLEL multi-video analysis for videos: {video_ids}, job: {job_id}")
@@ -1712,7 +1719,7 @@ def analyze_multiple_videos_with_progress(video_ids: list, job_id: str, selected
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             # Submit all video analysis tasks
             future_to_video = {
-                executor.submit(analyze_single_video_parallel, video_id, selected_brands): video_id 
+                executor.submit(analyze_single_video_parallel, video_id, selected_brands, api_key, index_id): video_id
                 for video_id in video_ids
             }
             
