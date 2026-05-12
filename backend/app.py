@@ -1984,11 +1984,12 @@ def combine_video_analyses(individual_analyses, video_ids):
 def list_videos():
     """List all videos in the TwelveLabs index"""
     try:
-        logger.info(f"Fetching videos from TwelveLabs index: {INDEX_ID}")
+        tl_client, index_id = get_tl_context(request)
+        logger.info(f"Fetching videos from TwelveLabs index: {index_id}")
 
         # List videos using the new SDK v1.0.1 syntax
-        videos_pager = client.indexes.videos.list(
-            index_id=INDEX_ID,
+        videos_pager = tl_client.indexes.videos.list(
+            index_id=index_id,
             page_limit=50
         )
 
@@ -2014,7 +2015,7 @@ def list_videos():
             # Get thumbnail URL and HLS info for this video
             hls_data = None
             try:
-                video_details = get_video_details_with_thumbnail(video.id)
+                video_details = get_video_details_with_thumbnail(video.id, tl_client, index_id)
                 if video_details and video_details['thumbnail_url']:
                     thumbnail_url = video_details['thumbnail_url']
                 
@@ -2047,30 +2048,32 @@ def list_videos():
         return jsonify({
             'videos': videos,
             'total_count': len(videos),
-            'index_id': INDEX_ID,
+            'index_id': index_id,
             'message': f'Successfully loaded {len(videos)} videos from TwelveLabs index'
         })
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error listing videos: {str(e)}")
         logger.error(f"Error type: {type(e).__name__}")
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
-        
+
         return jsonify({
             'videos': [],
             'total_count': 0,
-            'index_id': INDEX_ID,
+            'index_id': index_id if 'index_id' in locals() else None,
             'error': str(e),
             'error_type': type(e).__name__
         }), 500
 
-def get_video_details_with_thumbnail(video_id: str):
+def get_video_details_with_thumbnail(video_id: str, tl_client, index_id: str):
     """Get video details including thumbnail from TwelveLabs API"""
     try:
         # Use the SDK to retrieve video details with thumbnails
-        video_info = client.indexes.videos.retrieve(
-            index_id=INDEX_ID,
+        video_info = tl_client.indexes.videos.retrieve(
+            index_id=index_id,
             video_id=video_id
         )
         
@@ -2094,7 +2097,8 @@ def get_video_details_with_thumbnail(video_id: str):
 def get_video_details(video_id):
     """Get full video details including thumbnail from TwelveLabs API"""
     try:
-        video_details = get_video_details_with_thumbnail(video_id)
+        tl_client, index_id = get_tl_context(request)
+        video_details = get_video_details_with_thumbnail(video_id, tl_client, index_id)
         
         if video_details:
             video_info = video_details['video_info']
@@ -2124,6 +2128,8 @@ def get_video_details(video_id):
             })
         else:
             return jsonify({'error': 'Video not found or no details available'}), 404
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error getting video details for {video_id}: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -2132,7 +2138,8 @@ def get_video_details(video_id):
 def get_video_thumbnail(video_id):
     """Get thumbnail for a specific video"""
     try:
-        video_details = get_video_details_with_thumbnail(video_id)
+        tl_client, index_id = get_tl_context(request)
+        video_details = get_video_details_with_thumbnail(video_id, tl_client, index_id)
         
         if video_details and video_details['thumbnail_url']:
             return jsonify({
@@ -2143,6 +2150,8 @@ def get_video_thumbnail(video_id):
             return jsonify({
                 'thumbnail_url': f"https://via.placeholder.com/300x200/667eea/ffffff?text=Video+{video_id[:8]}"
             })
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error getting thumbnail for {video_id}: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -2607,13 +2616,14 @@ def analyze_video(video_id):
 def search_brands():
     """Search for specific brands across all indexed videos"""
     try:
+        tl_client, index_id = get_tl_context(request)
         query = request.args.get('query', '')
         if not query:
             return jsonify({'error': 'No search query provided'}), 400
-        
+
         # Search using TwelveLabs with new SDK v1.0.1
-        search_pager = client.search.query(
-            index_id=INDEX_ID, 
+        search_pager = tl_client.search.query(
+            index_id=index_id,
             query_text=query,
             search_options=["visual", "audio"],
             page_limit=20
@@ -2634,7 +2644,9 @@ def search_brands():
             'results': results,
             'total_results': len(results)
         })
-    
+
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Search error: {str(e)}")
         return jsonify({'error': str(e)}), 500
