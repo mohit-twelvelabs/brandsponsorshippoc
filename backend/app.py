@@ -2160,8 +2160,9 @@ def get_video_thumbnail(video_id):
 def analyze_video(video_id):
     """Analyze selected video for brand sponsorships per PRD requirements"""
     try:
+        tl_client, index_id = get_tl_context(request)
         logger.info(f"Starting analysis for video: {video_id}")
-        
+
         # First, dynamically detect brands in the video using TwelveLabs
         logger.info("Dynamically detecting brands in video...")
         
@@ -2191,7 +2192,7 @@ def analyze_video(video_id):
         
         # Get initial brand list from TwelveLabs
         try:
-            detection_response = client.analyze(
+            detection_response = tl_client.analyze(
                 video_id=video_id,
                 prompt=brand_detection_prompt
             )
@@ -2285,8 +2286,8 @@ def analyze_video(video_id):
         """
         
         # Generate analysis using TwelveLabs API with new SDK v1.0.1
-        analysis_response = client.analyze(
-            video_id=video_id, 
+        analysis_response = tl_client.analyze(
+            video_id=video_id,
             prompt=brand_analysis_prompt
         )
         
@@ -2523,11 +2524,11 @@ def analyze_video(video_id):
         # Get video metadata for title and duration using correct SDK method
         try:
             # Use the correct API to get video metadata
-            video_info = client.indexes.videos.retrieve(
-                index_id=INDEX_ID,
+            video_info = tl_client.indexes.videos.retrieve(
+                index_id=index_id,
                 video_id=video_id
             )
-            
+
             # Get video title from system_metadata
             video_title = f"Video {video_id[:8]}"  # Default title
             if hasattr(video_info, 'system_metadata') and video_info.system_metadata:
@@ -2605,9 +2606,11 @@ def analyze_video(video_id):
         }
         
         logger.info(f"Analysis complete for {video_id}: {total_brands} brands, {total_appearances} appearances")
-        
+
         return jsonify(response_data)
-    
+
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Analysis error for {video_id}: {str(e)}")
         return jsonify({'error': str(e)}), 500
