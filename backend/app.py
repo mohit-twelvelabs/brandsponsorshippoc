@@ -7,7 +7,7 @@ Using TwelveLabs API for multimodal video understanding
 import os
 import json
 from datetime import datetime, timedelta
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, abort
 from flask_cors import CORS
 import numpy as np
 from twelvelabs import TwelveLabs
@@ -30,21 +30,35 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__, static_folder='../frontend/build', static_url_path='')
 CORS(app, resources={r"/api/*": {"origins": "*", "supports_credentials": True}})
 
-# Configuration
-API_KEY = os.getenv("TWELVELABS_API_KEY", "")
-INDEX_ID = os.getenv("TWELVELABS_INDEX_ID", "")
 UPLOAD_FOLDER = '../uploads'
 ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'}
 
-# OpenAI API configuration
+# OpenAI API configuration (stays server-side; not exposed to users)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max file size
 
-# Initialize TwelveLabs client
-client = TwelveLabs(api_key=API_KEY)
+
+def get_tl_context(req, require_index=True):
+    """Resolve TwelveLabs credentials for the current request.
+
+    Reads X-TL-Api-Key and X-TL-Index-Id headers, falling back to env vars
+    so the deployment's default account continues to work when no headers
+    are sent. Aborts with 401/400 if a required field is missing.
+    """
+    api_key = req.headers.get("X-TL-Api-Key") or os.getenv("TWELVELABS_API_KEY", "")
+    index_id = req.headers.get("X-TL-Index-Id") or os.getenv("TWELVELABS_INDEX_ID", "")
+    if not api_key:
+        abort(401, description="Missing TwelveLabs API key")
+    if require_index and not index_id:
+        abort(400, description="Missing TwelveLabs index ID")
+    return TwelveLabs(api_key=api_key), index_id
+
+
+def has_default_tl_account():
+    return bool(os.environ.get("TWELVELABS_API_KEY"))
 
 # Analysis status tracking
 class AnalysisStatus:
@@ -1159,7 +1173,11 @@ def serve_react_files(path):
 @app.route('/api/health')
 def health_check():
     """Health check endpoint"""
-    return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'has_default_account': has_default_tl_account(),
+    })
 
 @app.route('/api/analyze/<video_id>/start', methods=['POST'])
 def start_analysis(video_id):
