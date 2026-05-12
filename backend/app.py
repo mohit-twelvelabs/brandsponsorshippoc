@@ -9,6 +9,7 @@ import json
 from datetime import datetime, timedelta
 from flask import Flask, request, jsonify, send_from_directory, abort
 from flask_cors import CORS
+from werkzeug.exceptions import HTTPException
 import numpy as np
 from twelvelabs import TwelveLabs
 from openai import OpenAI
@@ -41,7 +42,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max file size
 
 
-def get_tl_context(req, require_index=True):
+def get_tl_context(req, require_index: bool = True) -> tuple[TwelveLabs, str]:
     """Resolve TwelveLabs credentials for the current request.
 
     Reads X-TL-Api-Key and X-TL-Index-Id headers, falling back to env vars
@@ -57,8 +58,13 @@ def get_tl_context(req, require_index=True):
     return TwelveLabs(api_key=api_key), index_id
 
 
-def has_default_tl_account():
-    return bool(os.environ.get("TWELVELABS_API_KEY"))
+def has_default_tl_account() -> bool:
+    return bool(os.environ.get("TWELVELABS_API_KEY")) and bool(os.environ.get("TWELVELABS_INDEX_ID"))
+
+
+@app.errorhandler(HTTPException)
+def handle_http_exception(e):
+    return jsonify({"error": e.description}), e.code
 
 # Analysis status tracking
 class AnalysisStatus:
