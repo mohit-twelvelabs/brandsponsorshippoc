@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart3, ArrowLeft } from 'lucide-react';
+import { BarChart3, ArrowLeft, Plug } from 'lucide-react';
 import BrandSearch from './components/BrandSearch';
 import VideoSelector from './components/VideoSelector';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
@@ -130,7 +130,9 @@ function App() {
 
   // Handler for going back to previous step
   const handleGoBack = () => {
-    if (currentStep === 'video-selection') {
+    if (currentStep === 'brand-search') {
+      setCurrentStep('connect');
+    } else if (currentStep === 'video-selection') {
       setCurrentStep('brand-search');
     } else if (currentStep === 'analysis' || currentStep === 'results') {
       setCurrentStep('video-selection');
@@ -161,8 +163,21 @@ function App() {
             </div>
             
             <div className="flex items-center space-x-4">
-              {/* Back button for non-initial steps */}
-              {currentStep !== 'brand-search' && (
+              {activeAccount && currentStep !== 'connect' && (
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep('connect')}
+                  className="flex items-center text-xs bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-full"
+                  title="Switch account or index"
+                >
+                  <Plug className="w-3 h-3 mr-1" />
+                  <span className="font-medium mr-1">{activeAccount.nickname}</span>
+                  <span className="opacity-80">· {activeAccount.indexName}</span>
+                  <span className="ml-2 underline">switch</span>
+                </button>
+              )}
+
+              {currentStep !== 'brand-search' && currentStep !== 'connect' && (
                 <Button
                   variant="secondary"
                   size="sm"
@@ -174,8 +189,7 @@ function App() {
                   Back
                 </Button>
               )}
-              
-              {/* Start New button for results step */}
+
               {currentStep === 'results' && (
                 <Button
                   variant="secondary"
