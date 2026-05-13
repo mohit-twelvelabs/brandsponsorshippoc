@@ -7,6 +7,8 @@ import {
   ApiError,
   AnalysisStatus
 } from '../types';
+import { HealthResponse, IndexesResponse } from '../types';
+import { getActiveAccount } from '../lib/accountStorage';
 
 // Create axios instance with default config
 const api = axios.create({
@@ -17,11 +19,28 @@ const api = axios.create({
   },
 });
 
-// Response interceptor for error handling
+api.interceptors.request.use((config) => {
+  // Allow individual calls to opt out via { skipAuthHeaders: true } config.
+  // listIndexes uses an explicit per-call key during the connect flow.
+  if ((config as any).skipAuthHeaders) return config;
+  const account = getActiveAccount();
+  if (account) {
+    config.headers = config.headers || {};
+    (config.headers as any)['X-TL-Api-Key'] = account.apiKey;
+    (config.headers as any)['X-TL-Index-Id'] = account.indexId;
+  }
+  return config;
+});
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error('API Error:', error);
+    const status = error?.response?.status;
+    const skipRedirect = error?.config && (error.config as any).skipAuthRedirect;
+    if (status === 401 && !skipRedirect) {
+      window.dispatchEvent(new CustomEvent('tl-auth-required'));
+    }
     return Promise.reject(error);
   }
 );
@@ -32,6 +51,30 @@ export class ApiService {
    */
   static async healthCheck(): Promise<{ status: string; timestamp: string }> {
     const response: AxiosResponse = await api.get('/health');
+    return response.data;
+  }
+
+  /**
+   * Health check with default-account hint.
+   */
+  static async getHealth(): Promise<HealthResponse> {
+    const response: AxiosResponse<HealthResponse> = await api.get('/health', {
+      skipAuthHeaders: true,
+      skipAuthRedirect: true,
+    } as any);
+    return response.data;
+  }
+
+  /**
+   * List indexes available for an API key. Used during the Connect flow
+   * before any account has been persisted, so the key is injected manually.
+   */
+  static async listIndexes(apiKey: string): Promise<IndexesResponse> {
+    const response: AxiosResponse<IndexesResponse> = await api.get('/indexes', {
+      headers: { 'X-TL-Api-Key': apiKey },
+      skipAuthHeaders: true,
+      skipAuthRedirect: true,
+    } as any);
     return response.data;
   }
 
