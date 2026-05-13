@@ -58,14 +58,18 @@ git clone https://github.com/mohit-twelvelabs/brandsponsorshippoc.git
 cd brandsponsorshippoc
 ```
 
-### 2. Environment Setup
+### 2. Environment Setup (optional)
+
+The app no longer requires environment variables at boot — users connect their own TwelveLabs account from inside the app. If you want a "Use default demo account" button to appear on the Connect screen, set the TwelveLabs vars; OpenAI stays server-side.
+
 ```bash
-# Copy environment template
 cp env.example .env
 
-# Edit .env with your API keys
+# Optional — these become the fallback default the Connect screen offers as a one-click button
 TWELVELABS_API_KEY=your_twelvelabs_api_key
 TWELVELABS_INDEX_ID=your_index_id
+
+# Required for AI insights / executive summary / competitive analysis (server-side only)
 OPENAI_API_KEY=your_openai_api_key
 ```
 
@@ -109,10 +113,10 @@ Frontend runs on `http://localhost:3000`
 ## 📖 Usage
 
 ### Video Analysis Workflow
-1. **Upload Video**: Select video file through the web interface
-2. **Brand Selection**: Choose brands to analyze or let AI detect automatically
-3. **Analysis**: AI processes video for sponsorship placements
-4. **Results**: View comprehensive analytics dashboard
+1. **Connect**: Paste your TwelveLabs API key, pick an index. The app remembers it per browser. Save multiple accounts and switch between them from the header chip mid-session.
+2. **Brand Selection**: Pick brands to analyze. "Paste list" accepts a comma/newline-separated list; "Recently analyzed in this account" replays the last set you used.
+3. **Video Selection**: Pick one or multiple videos from the connected index.
+4. **Analysis**: Run analysis. Results dashboard renders inline.
 
 ### API Endpoints
 - `POST /api/upload` - Upload video files
