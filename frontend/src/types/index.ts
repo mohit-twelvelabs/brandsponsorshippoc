@@ -307,7 +307,7 @@ export interface UseAnalysisReturn {
 
 // Utility Types
 export type TabType = 'overview' | 'timeline' | 'context' | 'reach-awareness' | 'engagement' | 'brand-performance' | 'business-impact' | 'content-quality';
-export type AppStep = 'brand-search' | 'video-selection' | 'analysis' | 'results';
+export type AppStep = 'connect' | 'brand-search' | 'video-selection' | 'analysis' | 'results';
 
 export interface TabItem {
   id: TabType;
@@ -335,4 +335,34 @@ export interface ChartLayout {
     title: string;
   };
   hovermode: string;
+}
+
+export interface TLAccount {
+  id: string;
+  nickname: string;
+  apiKey: string;
+  indexId: string;
+  indexName: string;
+  createdAt: string;
+}
+
+export interface TLIndex {
+  id: string;
+  name: string;
+  videoCount: number;
+}
+
+export interface HealthResponse {
+  status: string;
+  timestamp: string;
+  has_default_account: boolean;
+}
+
+export interface IndexesResponse {
+  indexes: Array<{
+    id: string;
+    name: string;
+    video_count: number;
+    created_at: string;
+  }>;
 }
