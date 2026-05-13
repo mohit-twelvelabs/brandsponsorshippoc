@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BarChart3, ArrowLeft, Plug } from 'lucide-react';
 import BrandSearch from './components/BrandSearch';
 import VideoSelector from './components/VideoSelector';
@@ -37,6 +37,15 @@ function App() {
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedVideoIds, setSelectedVideoIds] = useState<string[]>([]);
   const [multiVideoMode, setMultiVideoMode] = useState(false);
+
+  // If a 401 or manual account removal clears the active account, route
+  // the viewer back to Connect so they can re-authenticate. Spec error
+  // table: "Saved key revoked since last visit" → redirect to Connect.
+  useEffect(() => {
+    if (!activeAccount && currentStep !== 'connect') {
+      setCurrentStep('connect');
+    }
+  }, [activeAccount, currentStep]);
   
   const [alertState, setAlertState] = useState<{
     type: 'success' | 'error' | 'info' | 'warning';
