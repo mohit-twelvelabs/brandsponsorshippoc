@@ -320,15 +320,17 @@ const BrandSearch: React.FC<BrandSearchProps> = ({
           <Text as="h3" className="text-sm font-medium">
             Selected Brands ({selectedBrands.length})
           </Text>
-          <div className="space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPasteOpen(v => !v)}
-              disabled={isLoading}
-            >
-              {pasteOpen ? 'Cancel' : 'Paste list'}
-            </Button>
+          <div className="flex items-center gap-2">
+            {!pasteOpen && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPasteOpen(true)}
+                disabled={isLoading}
+              >
+                Paste list
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
