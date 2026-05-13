@@ -12,6 +12,7 @@ from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
 import numpy as np
 from twelvelabs import TwelveLabs
+from twelvelabs.core import ApiError
 from openai import OpenAI
 from pydantic import BaseModel, Field, field_validator
 from typing import List, Dict, Optional, Literal, Any
@@ -1202,6 +1203,12 @@ def list_indexes():
         return jsonify({'indexes': results})
     except HTTPException:
         raise
+    except ApiError as e:
+        status = e.status_code or 500
+        # Surface 401/403 as auth errors so the frontend's clean branch fires.
+        msg = 'Invalid API key' if status in (401, 403) else str(e.body or e)
+        logger.warning(f"TL API error in list_indexes: status={status} body={e.body}")
+        return jsonify({'error': msg}), status
     except Exception as e:
         logger.error(f"Error listing indexes: {str(e)}")
         return jsonify({'error': str(e)}), 500
