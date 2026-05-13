@@ -152,6 +152,7 @@ const ConnectAccount: React.FC<ConnectAccountProps> = ({ onConnected }) => {
                 onChange={(e) => setApiKeyInput(e.target.value)}
                 placeholder="tlk_..."
                 disabled={validating}
+                className="pr-10"
               />
               <Button
                 variant="outline"
@@ -159,6 +160,9 @@ const ConnectAccount: React.FC<ConnectAccountProps> = ({ onConnected }) => {
                 onClick={() => setShowKey(v => !v)}
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 h-6 w-6"
                 type="button"
+                disabled={validating}
+                aria-label={showKey ? 'Hide API key' : 'Show API key'}
+                aria-pressed={showKey}
               >
                 {showKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
               </Button>
@@ -170,7 +174,7 @@ const ConnectAccount: React.FC<ConnectAccountProps> = ({ onConnected }) => {
           )}
 
           <div className="flex items-center justify-between">
-            <Button onClick={handleConnect} disabled={validating}>
+            <Button onClick={handleConnect} disabled={validating || !apiKeyInput.trim()}>
               {validating ? 'Connecting…' : 'Connect'}
             </Button>
             {hasDefault && accounts.length === 0 && (
@@ -219,7 +223,12 @@ const ConnectAccount: React.FC<ConnectAccountProps> = ({ onConnected }) => {
           </div>
 
           <div className="flex justify-between">
-            <Button variant="outline" onClick={() => { setIndexes(null); setPickedIndexId(null); }}>
+            <Button variant="outline" onClick={() => {
+              setIndexes(null);
+              setPickedIndexId(null);
+              setNickname('');
+              setError(null);
+            }}>
               Back
             </Button>
             <Button onClick={handleSave} disabled={!pickedIndexId}>
