@@ -28,8 +28,31 @@ const BrandSearch: React.FC<BrandSearchProps> = ({
   const [suggestions, setSuggestions] = useState<BrandSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [pasteText, setPasteText] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handlePasteAdd = useCallback(() => {
+    const tokens = pasteText
+      .split(/[,\n]+/)
+      .map(s => s.trim())
+      .filter(Boolean);
+    if (tokens.length === 0) {
+      setPasteOpen(false);
+      setPasteText('');
+      return;
+    }
+    const existing = new Set(selectedBrands.map(b => b.toLowerCase()));
+    const additions = tokens.filter(t => !existing.has(t.toLowerCase()));
+    if (additions.length > 0) {
+      const next = [...selectedBrands, ...additions];
+      setSelectedBrands(next);
+      onBrandsSelect(next);
+    }
+    setPasteText('');
+    setPasteOpen(false);
+  }, [pasteText, selectedBrands, onBrandsSelect]);
 
   // Popular brand suggestions for quick selection
   const popularBrands: BrandSuggestion[] = [
@@ -256,12 +279,53 @@ const BrandSearch: React.FC<BrandSearchProps> = ({
         )}
       </div>
 
-      {/* Selected Brands */}
-      {selectedBrands.length > 0 && (
-        <div className="mb-6">
-          <Text as="h3" className="text-sm font-medium mb-3">
+      {/* Selected Brands + toolbar (always visible — paste list works on empty state) */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <Text as="h3" className="text-sm font-medium">
             Selected Brands ({selectedBrands.length})
           </Text>
+          <div className="space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPasteOpen(v => !v)}
+              disabled={isLoading}
+            >
+              {pasteOpen ? 'Cancel' : 'Paste list'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { setSelectedBrands([]); onBrandsSelect([]); }}
+              disabled={isLoading || selectedBrands.length === 0}
+            >
+              Clear all
+            </Button>
+          </div>
+        </div>
+
+        {pasteOpen && (
+          <div className="mb-3 p-3 border rounded-lg">
+            <textarea
+              className="w-full p-2 border rounded text-sm font-mono"
+              rows={3}
+              value={pasteText}
+              onChange={(e) => setPasteText(e.target.value)}
+              placeholder="Nike, Adidas&#10;Ford&#10;Coca-Cola"
+            />
+            <div className="flex justify-end mt-2 space-x-2">
+              <Button variant="outline" size="sm" onClick={() => { setPasteText(''); setPasteOpen(false); }}>
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handlePasteAdd}>
+                Add
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {selectedBrands.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {selectedBrands.map((brand) => (
               <Badge
@@ -282,8 +346,8 @@ const BrandSearch: React.FC<BrandSearchProps> = ({
               </Badge>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Action Buttons */}
       <div className="flex justify-between items-center">
