@@ -10,6 +10,8 @@ import { useAnalysis } from './hooks/useAnalysis';
 import { Text } from './components/ui/Text';
 import { Switch } from './components/ui/Switch';
 import { AppStep } from './types';
+import { useAccounts } from './lib/AccountContext';
+import ConnectAccount from './components/ConnectAccount';
 
 function App() {
   const { 
@@ -24,9 +26,13 @@ function App() {
     brandsFound,
     isMultiVideo
   } = useAnalysis();
-  
+
+  const { activeAccount } = useAccounts();
+
   // App flow state
-  const [currentStep, setCurrentStep] = useState<AppStep>('brand-search');
+  const [currentStep, setCurrentStep] = useState<AppStep>(() =>
+    activeAccount ? 'brand-search' : 'connect'
+  );
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedVideoIds, setSelectedVideoIds] = useState<string[]>([]);
   const [multiVideoMode, setMultiVideoMode] = useState(false);
@@ -190,20 +196,20 @@ function App() {
         {/* Step Indicator */}
         <div className="flex justify-center mb-8">
           <div className="flex items-center space-x-4">
-            {['brand-search', 'video-selection', 'analysis', 'results'].map((step, index) => (
+            {['connect', 'brand-search', 'video-selection', 'analysis', 'results'].map((step, index) => (
               <div key={step} className="flex items-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                   currentStep === step 
                     ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white' 
-                    : index < ['brand-search', 'video-selection', 'analysis', 'results'].indexOf(currentStep)
+                    : index < ['connect', 'brand-search', 'video-selection', 'analysis', 'results'].indexOf(currentStep)
                       ? 'bg-green-500 text-white'
                       : 'bg-gray-200 text-gray-600'
                 }`}>
                   {index + 1}
                 </div>
-                {index < 3 && (
+                {index < 4 && (
                   <div className={`w-8 h-0.5 mx-2 ${
-                    index < ['brand-search', 'video-selection', 'analysis', 'results'].indexOf(currentStep)
+                    index < ['connect', 'brand-search', 'video-selection', 'analysis', 'results'].indexOf(currentStep)
                       ? 'bg-green-500'
                       : 'bg-gray-200'
                   }`} />
@@ -215,6 +221,12 @@ function App() {
 
         {/* Step Content */}
         <div className="mb-8">
+          {currentStep === 'connect' && (
+            <div className="animate-fade-in">
+              <ConnectAccount onConnected={() => setCurrentStep('brand-search')} />
+            </div>
+          )}
+
           {currentStep === 'brand-search' && (
             <div className="animate-fade-in">
               <BrandSearch 
