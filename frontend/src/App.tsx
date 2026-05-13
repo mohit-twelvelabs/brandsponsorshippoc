@@ -11,6 +11,7 @@ import { Text } from './components/ui/Text';
 import { Switch } from './components/ui/Switch';
 import { AppStep } from './types';
 import { useAccounts } from './lib/AccountContext';
+import { setRecentBrands } from './lib/accountStorage';
 import ConnectAccount from './components/ConnectAccount';
 
 function App() {
@@ -85,8 +86,11 @@ function App() {
 
     const videoId = selectedVideoIds[0];
     setCurrentStep('analysis');
+    if (activeAccount && selectedBrands.length > 0) {
+      setRecentBrands(activeAccount.id, selectedBrands);
+    }
     showAlert('success', 'Starting analysis...');
-    
+
     try {
       // Pass selected brands to the analysis
       await analyzeVideo(videoId, selectedBrands);
@@ -111,8 +115,11 @@ function App() {
     }
 
     setCurrentStep('analysis');
+    if (activeAccount && selectedBrands.length > 0) {
+      setRecentBrands(activeAccount.id, selectedBrands);
+    }
     showAlert('success', `${selectedVideoIds.length} videos selected! Starting multi-video analysis...`);
-    
+
     try {
       // Pass selected brands to the multi-video analysis
       await analyzeMultipleVideos(selectedVideoIds, selectedBrands);

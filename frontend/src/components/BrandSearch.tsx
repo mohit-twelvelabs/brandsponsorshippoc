@@ -1,10 +1,12 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { Search, X, Plus, Building2, CheckCircle2 } from 'lucide-react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
 import { Text } from './ui/Text';
 import { Input } from './ui/Input';
+import { useAccounts } from '../lib/AccountContext';
+import { getRecentBrands } from '../lib/accountStorage';
 
 export interface BrandSearchProps {
   onBrandsSelect: (brands: string[]) => void;
@@ -32,6 +34,12 @@ const BrandSearch: React.FC<BrandSearchProps> = ({
   const [pasteText, setPasteText] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { activeAccount } = useAccounts();
+  const recent = useMemo(
+    () => getRecentBrands(activeAccount?.id ?? null),
+    [activeAccount?.id],
+  );
 
   const handlePasteAdd = useCallback(() => {
     const tokens = pasteText
@@ -194,6 +202,33 @@ const BrandSearch: React.FC<BrandSearchProps> = ({
           Search for and select the specific brands you want to analyze for sponsorship ROI in your video.
         </Text>
       </Card.Header>
+
+      {recent.length > 0 && selectedBrands.length === 0 && (
+        <div className="mb-4 p-3 border rounded-lg bg-accent/5">
+          <div className="flex items-center justify-between mb-2">
+            <Text as="p" className="text-xs font-medium text-black/70">
+              Recently analyzed in this account
+            </Text>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSelectedBrands(recent);
+                onBrandsSelect(recent);
+              }}
+            >
+              Use this set ({recent.length})
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {recent.map(b => (
+              <span key={b} className="text-xs px-2 py-0.5 bg-white border rounded">
+                {b}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Search Input */}
       <div className="relative mb-6">
