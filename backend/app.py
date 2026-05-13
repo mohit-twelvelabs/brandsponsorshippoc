@@ -1185,6 +1185,27 @@ def health_check():
         'has_default_account': has_default_tl_account(),
     })
 
+@app.route('/api/indexes')
+def list_indexes():
+    """List TwelveLabs indexes for the supplied API key."""
+    try:
+        tl_client, _ = get_tl_context(request, require_index=False)
+        indexes_pager = tl_client.indexes.list()
+        results = []
+        for idx in indexes_pager:
+            results.append({
+                'id': getattr(idx, 'id', None) or getattr(idx, '_id', None),
+                'name': getattr(idx, 'index_name', None) or getattr(idx, 'name', None),
+                'video_count': getattr(idx, 'video_count', None),
+                'created_at': getattr(idx, 'created_at', None),
+            })
+        return jsonify({'indexes': results})
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error listing indexes: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/analyze/<video_id>/start', methods=['POST'])
 def start_analysis(video_id):
     """Start video analysis and return job ID"""
