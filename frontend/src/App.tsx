@@ -38,14 +38,16 @@ function App() {
   const [selectedVideoIds, setSelectedVideoIds] = useState<string[]>([]);
   const [multiVideoMode, setMultiVideoMode] = useState(false);
 
-  // If a 401 or manual account removal clears the active account, route
-  // the viewer back to Connect so they can re-authenticate. Spec error
-  // table: "Saved key revoked since last visit" → redirect to Connect.
+  // Auth-recovery: listen for 401-driven account clears (dispatched by the
+  // axios response interceptor) and route the viewer to Connect. We listen
+  // for the explicit event rather than watching activeAccount, because the
+  // "Use default demo account" flow intentionally sets activeAccount to null
+  // and stays on brand-search — watching the state would trap that flow.
   useEffect(() => {
-    if (!activeAccount && currentStep !== 'connect') {
-      setCurrentStep('connect');
-    }
-  }, [activeAccount, currentStep]);
+    const handler = () => setCurrentStep('connect');
+    window.addEventListener('tl-auth-required', handler);
+    return () => window.removeEventListener('tl-auth-required', handler);
+  }, []);
   
   const [alertState, setAlertState] = useState<{
     type: 'success' | 'error' | 'info' | 'warning';
