@@ -29,8 +29,26 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Load environment variables from .env file when running locally.
+# Production (Railway) injects env vars directly; .env is absent there.
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    logger.warning("python-dotenv not installed, relying on system environment variables")
+except Exception as e:
+    logger.warning(f"Failed to load .env file: {e}")
+
 app = Flask(__name__, static_folder='../frontend/build', static_url_path='')
-CORS(app, resources={r"/api/*": {"origins": "*", "supports_credentials": True}})
+# Allow the per-account credential headers through CORS. Flask-CORS's default
+# allow_headers list does not include custom X-* headers, so the browser would
+# block preflight for /api/* requests carrying X-TL-Api-Key.
+CORS(app, resources={r"/api/*": {
+    "origins": "*",
+    "supports_credentials": True,
+    "allow_headers": ["Content-Type", "X-TL-Api-Key", "X-TL-Index-Id"],
+    "expose_headers": ["Content-Type"],
+}})
 
 UPLOAD_FOLDER = '../uploads'
 ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'}
