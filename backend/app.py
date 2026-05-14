@@ -81,6 +81,32 @@ def has_default_tl_account() -> bool:
     return bool(os.environ.get("TWELVELABS_API_KEY")) and bool(os.environ.get("TWELVELABS_INDEX_ID"))
 
 
+def friendly_tl_error(exc: Exception) -> tuple[str, str]:
+    """Translate an SDK/worker exception into (user_message, error_code).
+
+    Recognized codes the frontend can branch on:
+      - index_not_supported_for_generate: chosen index lacks a Pegasus model
+      - api_key_invalid: TL key rejected mid-job
+      - generic: anything else (raw string carried for logs)
+    """
+    if isinstance(exc, ApiError):
+        body = getattr(exc, 'body', None) or {}
+        code = (body.get('code') if isinstance(body, dict) else None) or ''
+        if code == 'index_not_supported_for_generate':
+            return (
+                "This index doesn't support brand analysis. Brand detection requires "
+                "the Pegasus model — recreate the index at twelvelabs.io with Pegasus "
+                "enabled, or pick a different index.",
+                'index_not_supported_for_generate',
+            )
+        if code == 'api_key_invalid' or exc.status_code in (401, 403):
+            return ("TwelveLabs credentials expired mid-job. Reconnect from the header chip.",
+                    'api_key_invalid')
+        msg = body.get('message') if isinstance(body, dict) else None
+        return (msg or str(exc), code or 'tl_api_error')
+    return (str(exc), 'generic')
+
+
 @app.errorhandler(HTTPException)
 def handle_http_exception(e):
     return jsonify({"error": e.description}), e.code
@@ -1212,11 +1238,24 @@ def list_indexes():
         indexes_pager = tl_client.indexes.list()
         results = []
         for idx in indexes_pager:
+            # Models is a list of IndexModelsItem with model_name + model_options.
+            # The brand-analysis flow calls client.analyze() which requires a
+            # Pegasus model in the index; Marengo-only indexes 400 with
+            # 'index_not_supported_for_generate'. Surface this so the frontend
+            # can prevent the footgun at pick time.
+            model_names = []
+            for m in (getattr(idx, 'models', None) or []):
+                name = getattr(m, 'model_name', None)
+                if name:
+                    model_names.append(name)
+            supports_analyze = any(n.lower().startswith('pegasus') for n in model_names)
             results.append({
                 'id': getattr(idx, 'id', None) or getattr(idx, '_id', None),
                 'name': getattr(idx, 'index_name', None) or getattr(idx, 'name', None),
                 'video_count': getattr(idx, 'video_count', None),
                 'created_at': getattr(idx, 'created_at', None),
+                'models': model_names,
+                'supports_analyze': supports_analyze,
             })
         return jsonify({'indexes': results})
     except HTTPException:
@@ -1659,11 +1698,13 @@ def analyze_video_with_progress(video_id: str, job_id: str, selected_brands: lis
         })
         
     except Exception as e:
-        logger.error(f"Analysis error: {str(e)}")
+        user_msg, code = friendly_tl_error(e)
+        logger.error(f"Analysis error [{code}]: {str(e)}")
         analysis_status.update_job(job_id, {
             'status': 'failed',
             'message': 'Analysis failed',
-            'error': str(e)
+            'error': user_msg,
+            'error_code': code,
         })
 
 @app.route('/api/analyze/multi/start', methods=['POST'])
@@ -1821,11 +1862,13 @@ def analyze_multiple_videos_with_progress(video_ids: list, job_id: str, selected
         logger.info(f"Multi-video analysis completed for job: {job_id}")
         
     except Exception as e:
-        logger.error(f"Error in parallel multi-video analysis: {str(e)}")
+        user_msg, code = friendly_tl_error(e)
+        logger.error(f"Multi-video analysis error [{code}]: {str(e)}")
         analysis_status.update_job(job_id, {
             'status': 'failed',
             'message': 'Parallel multi-video analysis failed',
-            'error': str(e)
+            'error': user_msg,
+            'error_code': code,
         })
 
 def combine_video_analyses(individual_analyses, video_ids):

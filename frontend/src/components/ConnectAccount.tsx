@@ -58,6 +58,8 @@ const ConnectAccount: React.FC<ConnectAccountProps> = ({ onConnected }) => {
         id: i.id,
         name: i.name || '(unnamed index)',
         videoCount: i.video_count ?? 0,
+        models: i.models ?? [],
+        supportsAnalyze: i.supports_analyze ?? false,
       }));
       if (mapped.length === 0) {
         setError('This account has no indexes. Create one at twelvelabs.io first.');
@@ -189,27 +191,41 @@ const ConnectAccount: React.FC<ConnectAccountProps> = ({ onConnected }) => {
       {indexes && (
         <>
           <Text as="h3" className="text-sm font-medium mb-2">Pick an index</Text>
+          <Text as="p" className="text-xs text-black/70 mb-2">
+            Brand analysis requires the Pegasus model. Indexes without it are disabled below — recreate them at twelvelabs.io with Pegasus enabled.
+          </Text>
           <div className="space-y-2 mb-4">
-            {indexes.map(i => (
-              <label
-                key={i.id}
-                className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer ${
-                  pickedIndexId === i.id ? 'border-orange-500 bg-orange-50' : ''
-                }`}
-              >
-                <div className="flex items-center">
-                  <input
-                    type="radio"
-                    name="tl-index"
-                    className="mr-3"
-                    checked={pickedIndexId === i.id}
-                    onChange={() => setPickedIndexId(i.id)}
-                  />
-                  <Text as="p" className="font-medium">{i.name}</Text>
-                </div>
-                <Text as="p" className="text-xs text-black/70">{i.videoCount} videos</Text>
-              </label>
-            ))}
+            {indexes.map(i => {
+              const disabled = !i.supportsAnalyze;
+              return (
+                <label
+                  key={i.id}
+                  className={`flex items-center justify-between p-3 border rounded-lg ${
+                    disabled ? 'opacity-60 cursor-not-allowed bg-gray-50'
+                      : 'cursor-pointer ' + (pickedIndexId === i.id ? 'border-orange-500 bg-orange-50' : '')
+                  }`}
+                >
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      name="tl-index"
+                      className="mr-3"
+                      checked={pickedIndexId === i.id}
+                      onChange={() => setPickedIndexId(i.id)}
+                      disabled={disabled}
+                    />
+                    <div>
+                      <Text as="p" className="font-medium">{i.name}</Text>
+                      <Text as="p" className="text-xs text-black/60">
+                        {i.models.length > 0 ? i.models.join(', ') : 'no models reported'}
+                        {disabled && ' · no Pegasus — analysis disabled'}
+                      </Text>
+                    </div>
+                  </div>
+                  <Text as="p" className="text-xs text-black/70">{i.videoCount} videos</Text>
+                </label>
+              );
+            })}
           </div>
 
           <div className="mb-3">

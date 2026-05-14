@@ -350,6 +350,8 @@ export interface TLIndex {
   id: string;
   name: string;
   videoCount: number;
+  models: string[];
+  supportsAnalyze: boolean;
 }
 
 export interface HealthResponse {
@@ -364,5 +366,7 @@ export interface IndexesResponse {
     name: string;
     video_count: number;
     created_at: string;
+    models?: string[];
+    supports_analyze?: boolean;
   }>;
 }

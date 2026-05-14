@@ -109,7 +109,9 @@ function App() {
       showAlert('success', 'Analysis completed successfully!');
     } catch (error: any) {
       showAlert('error', error.message || 'Analysis failed');
-      // Stay on analysis step to allow retry
+      // Route back to video selection so the user can retry, swap videos,
+      // or switch index via the header chip instead of staring at an empty dashboard.
+      setCurrentStep('video-selection');
     }
   };
 
@@ -138,7 +140,9 @@ function App() {
       showAlert('success', 'Multi-video analysis completed successfully!');
     } catch (error: any) {
       showAlert('error', error.message || 'Multi-video analysis failed');
-      // Stay on analysis step to allow retry
+      // Route back to video selection so the user can retry, swap videos,
+      // or switch index via the header chip instead of staring at an empty dashboard.
+      setCurrentStep('video-selection');
     }
   };
 
