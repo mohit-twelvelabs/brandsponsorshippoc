@@ -192,7 +192,7 @@ const ConnectAccount: React.FC<ConnectAccountProps> = ({ onConnected }) => {
         <>
           <Text as="h3" className="text-sm font-medium mb-2">Pick an index</Text>
           <Text as="p" className="text-xs text-black/70 mb-2">
-            Brand analysis requires the Pegasus model. Indexes without it are disabled below — recreate them at twelvelabs.io with Pegasus enabled.
+            Brand detection runs on Marengo search. Any index with a Marengo model (2.7, 3.0, …) works; indexes without one are disabled below.
           </Text>
           <div className="space-y-2 mb-4">
             {indexes.map(i => {
@@ -218,7 +218,7 @@ const ConnectAccount: React.FC<ConnectAccountProps> = ({ onConnected }) => {
                       <Text as="p" className="font-medium">{i.name}</Text>
                       <Text as="p" className="text-xs text-black/60">
                         {i.models.length > 0 ? i.models.join(', ') : 'no models reported'}
-                        {disabled && ' · no Pegasus — analysis disabled'}
+                        {disabled && ' · no Marengo — analysis disabled'}
                       </Text>
                     </div>
                   </div>

@@ -210,10 +210,12 @@ def friendly_tl_error(exc: Exception) -> tuple[str, str]:
         body = getattr(exc, 'body', None) or {}
         code = (body.get('code') if isinstance(body, dict) else None) or ''
         if code == 'index_not_supported_for_generate':
+            # Marengo-search-based detection should mean we don't hit this anymore,
+            # but the sync-route auto-detection step still uses Pegasus opportunistically.
             return (
-                "This index doesn't support brand analysis. Brand detection requires "
-                "the Pegasus model — recreate the index at twelvelabs.io with Pegasus "
-                "enabled, or pick a different index.",
+                "This index doesn't support a step in the analysis. If you're on the "
+                "default flow, this shouldn't happen — try reconnecting with a different "
+                "index, or contact support.",
                 'index_not_supported_for_generate',
             )
         if code == 'api_key_invalid' or exc.status_code in (401, 403):
@@ -1355,17 +1357,15 @@ def list_indexes():
         indexes_pager = tl_client.indexes.list()
         results = []
         for idx in indexes_pager:
-            # Models is a list of IndexModelsItem with model_name + model_options.
-            # The brand-analysis flow calls client.analyze() which requires a
-            # Pegasus model in the index; Marengo-only indexes 400 with
-            # 'index_not_supported_for_generate'. Surface this so the frontend
-            # can prevent the footgun at pick time.
+            # Brand detection runs through Marengo search (client.search.query),
+            # so any index with a Marengo model is usable. Pegasus is no longer
+            # required.
             model_names = []
             for m in (getattr(idx, 'models', None) or []):
                 name = getattr(m, 'model_name', None)
                 if name:
                     model_names.append(name)
-            supports_analyze = any(n.lower().startswith('pegasus') for n in model_names)
+            supports_analyze = any(n.lower().startswith('marengo') for n in model_names)
             results.append({
                 'id': getattr(idx, 'id', None) or getattr(idx, '_id', None),
                 'name': getattr(idx, 'index_name', None) or getattr(idx, 'name', None),
