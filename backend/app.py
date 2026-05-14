@@ -81,6 +81,123 @@ def has_default_tl_account() -> bool:
     return bool(os.environ.get("TWELVELABS_API_KEY")) and bool(os.environ.get("TWELVELABS_INDEX_ID"))
 
 
+def detect_brand_appearances_via_search(
+    tl_client: "TwelveLabs",
+    index_id: str,
+    video_id: str,
+    brand_names: List[str],
+    on_progress=None,
+) -> List[Dict[str, Any]]:
+    """Use Marengo search to find brand appearances in a single video.
+
+    Replaces the older Pegasus client.analyze() prompt-based approach so the
+    pipeline works on Marengo-only indexes (no `pegasus` model required).
+    Returns dicts shaped like BrandAppearance (timeline, brand, type, prominence, etc.)
+    so the existing metric/summary code downstream needs no changes.
+    """
+    if not brand_names:
+        return []
+
+    appearances: List[Dict[str, Any]] = []
+    prominence_map = {"high": "primary", "medium": "secondary", "low": "background"}
+    attention_map = {"high": "high", "medium": "medium", "low": "low"}
+
+    for idx, raw_brand in enumerate(brand_names):
+        brand = (raw_brand or "").strip()
+        if not brand:
+            continue
+        try:
+            # Cast a moderately wide net: visual + audio, OR operator.
+            # filter pins results to this video_id so we don't accidentally
+            # pull hits from other videos in the same index.
+            results = tl_client.search.query(
+                index_id=index_id,
+                query_text=f"{brand} logo, brand mark, sponsor placement, or audio mention",
+                search_options=["visual", "audio"],
+                operator="or",
+                filter=json.dumps({"id": [video_id]}),
+                page_limit=50,
+                adjust_confidence_level=0.5,
+            )
+        except ApiError as e:
+            logger.warning(f"Marengo search failed for brand {brand!r}: {e}")
+            if on_progress:
+                on_progress(idx + 1, len(brand_names))
+            continue
+        except Exception as e:
+            logger.warning(f"Unexpected error searching for {brand!r}: {e}")
+            if on_progress:
+                on_progress(idx + 1, len(brand_names))
+            continue
+
+        for item in results:
+            # Skip cross-video bleed even though the filter should prevent it.
+            item_video_id = getattr(item, "video_id", None)
+            if item_video_id and item_video_id != video_id:
+                continue
+
+            start = getattr(item, "start", None)
+            end = getattr(item, "end", None)
+            if start is None or end is None:
+                continue
+            try:
+                start_f, end_f = float(start), float(end)
+            except (TypeError, ValueError):
+                continue
+            if end_f <= start_f:
+                continue
+
+            score = getattr(item, "score", None) or 0
+            try:
+                score_f = float(score)
+            except (TypeError, ValueError):
+                score_f = 0.0
+
+            raw_confidence = (getattr(item, "confidence", None) or "low")
+            confidence = str(raw_confidence).lower()
+            if confidence not in ("high", "medium", "low"):
+                confidence = "low"
+
+            transcription = getattr(item, "transcription", None) or ""
+            placement_type = "logo"
+            if transcription and brand.lower() in transcription.lower():
+                placement_type = "audio_mention"
+
+            desc_bits = [
+                f"{brand} detected via Marengo search",
+                f"score={score_f:.2f}, confidence={confidence}",
+            ]
+            if transcription:
+                trimmed = transcription[:160].strip()
+                if trimmed:
+                    desc_bits.append(f"transcript: {trimmed!r}")
+            description = " | ".join(desc_bits)
+            if len(description) < 10:
+                description = f"{brand} brand placement detected in clip"
+
+            appearances.append({
+                "timeline": [start_f, end_f],
+                "brand": brand,
+                "type": placement_type,
+                "sponsorship_category": categorize_sponsorship_placement(placement_type, "game_action"),
+                "location": None,
+                "prominence": prominence_map.get(confidence, "background"),
+                "context": "game_action",
+                "description": description,
+                "sentiment_context": "neutral",
+                "viewer_attention": attention_map.get(confidence, "low"),
+                # Carry the raw Marengo signal so downstream scoring can use it
+                # instead of relying on the LLM-derived heuristics.
+                "marengo_score": score_f,
+                "marengo_confidence": confidence,
+            })
+
+        if on_progress:
+            on_progress(idx + 1, len(brand_names))
+
+    return appearances
+
+
 def friendly_tl_error(exc: Exception) -> tuple[str, str]:
     """Translate an SDK/worker exception into (user_message, error_code).
 
@@ -1440,42 +1557,36 @@ def analyze_video_with_progress(video_id: str, job_id: str, selected_brands: lis
             'status': 'processing',
             'stage': 'brand_analysis',
             'progress': 35,
-            'message': 'Analyzing video with multimodal AI...',
-            'details': 'Detecting brands, logos, and sponsorship content'
+            'message': 'Searching for brand placements...',
+            'details': f'Querying Marengo across visual + audio modalities for {len(brands_to_analyze)} brand(s)'
         })
-        
-        # Get brand appearances using TwelveLabs
-        logger.info("Getting brand appearances from TwelveLabs...")
-        analysis_response = tl_client.analyze(
-            video_id=video_id,
-            prompt=brand_analysis_prompt
+
+        # Detect brand appearances using Marengo search (replaces the prior
+        # Pegasus generate/analyze path, which required indexes to have the
+        # pegasus model installed). brand_analysis_prompt above is now unused
+        # but kept for historical reference and easy diffing.
+        def _search_progress(done: int, total: int) -> None:
+            pct = 35 + int(15 * done / max(total, 1))  # 35 → 50
+            analysis_status.update_job(job_id, {
+                'progress': pct,
+                'message': f'Searching for brand placements ({done}/{total})...',
+            })
+
+        logger.info(
+            f"Searching for {len(brands_to_analyze)} brand(s) in video {video_id} via Marengo"
         )
-        
+        brand_appearances = detect_brand_appearances_via_search(
+            tl_client, index_id, video_id, brands_to_analyze, on_progress=_search_progress,
+        )
+        logger.info(f"Marengo returned {len(brand_appearances)} brand appearance(s)")
+
         analysis_status.update_job(job_id, {
             'status': 'processing',
             'stage': 'brand_analysis',
             'progress': 50,
-            'message': 'Processing AI response...',
-            'details': 'Extracting brand detection data'
+            'message': 'Aggregating brand placements...',
+            'details': f'{len(brand_appearances)} clip(s) matched',
         })
-        
-        # Parse the response
-        response_text = analysis_response.data if hasattr(analysis_response, 'data') else str(analysis_response)
-        logger.info(f"Raw TwelveLabs response length: {len(response_text)}")
-        
-        # Extract JSON from response
-        json_match = re.search(r'\[[\s\S]*\]', response_text)
-        if json_match:
-            try:
-                brand_appearances = json.loads(json_match.group())
-                logger.info(f"Parsed {len(brand_appearances)} brand appearances")
-            except json.JSONDecodeError as e:
-                logger.error(f"JSON decode error: {str(e)}")
-                logger.error(f"Failed JSON: {json_match.group()[:500]}...")
-                brand_appearances = []
-        else:
-            logger.warning("No JSON array found in response")
-            brand_appearances = []
         
         # Stage 3: Processing appearances
         analysis_status.update_job(job_id, {
@@ -2395,54 +2506,13 @@ def analyze_video(video_id):
          ]
         """
         
-        # Generate analysis using TwelveLabs API with new SDK v1.0.1
-        analysis_response = tl_client.analyze(
-            video_id=video_id,
-            prompt=brand_analysis_prompt
+        # Detect brand appearances via Marengo search (works on Marengo-only
+        # indexes; the previous Pegasus client.analyze() path required pegasus).
+        # brand_analysis_prompt above is now unused — kept for diff readability.
+        brand_data = detect_brand_appearances_via_search(
+            tl_client, index_id, video_id, brands_to_analyze,
         )
-        
-        # Extract text from response - SDK v1.0.1 returns data field
-        analysis_result = analysis_response.data if hasattr(analysis_response, 'data') else str(analysis_response)
-        logger.info(f"Raw TwelveLabs response: {analysis_result[:500]}...")
-        
-        # Parse and validate the JSON response from TwelveLabs
-        try:
-            raw_brand_data = json.loads(analysis_result)
-            
-            # Validate each appearance with Pydantic
-            brand_data = []
-            for appearance in raw_brand_data:
-                try:
-                    # Ensure required fields have defaults if missing
-                    validated_app = BrandAppearance(**appearance)
-                    brand_data.append(validated_app.model_dump())
-                except Exception as val_err:
-                    logger.warning(f"Skipping invalid appearance: {val_err}")
-                    # Try to salvage what we can
-                    if 'brand' in appearance and 'timeline' in appearance:
-                        brand_data.append(appearance)
-                        
-        except json.JSONDecodeError as e:
-            logger.error(f"JSON decode error: {str(e)}")
-            logger.error(f"Raw response was: {analysis_result}")
-            # Fallback: extract JSON from response if wrapped in markdown or text
-            import re
-            json_match = re.search(r'\[.*\]', analysis_result, re.DOTALL)
-            if json_match:
-                try:
-                    brand_data = json.loads(json_match.group())
-                    logger.info("Successfully extracted JSON from response")
-                except json.JSONDecodeError:
-                    logger.error("Failed to parse extracted JSON")
-                    brand_data = []
-            else:
-                logger.error("No JSON array found in response")
-                brand_data = []
-        
-        # Ensure brand_data is a list
-        if not isinstance(brand_data, list):
-            logger.error(f"brand_data is not a list: {type(brand_data)}")
-            brand_data = []
+        logger.info(f"Marengo returned {len(brand_data)} brand appearance(s) for sync route")
         
         # Calculate analytics
         video_duration = 5400  # Default 90 minutes for sports events
