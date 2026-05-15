@@ -117,6 +117,44 @@
   background: var(--muted-foreground);
 }
 
+/* Sponsorship Intel tab — slim, themed scrollbars instead of the
+   default browser chrome. Applies inside the live feed, the
+   sponsor cards row, and the impressions table. */
+.sponsorship-feed-scroll,
+.sponsorship-cards-scroll,
+.sponsorship-table-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 107, 53, 0.4) transparent;
+}
+.sponsorship-feed-scroll::-webkit-scrollbar,
+.sponsorship-cards-scroll::-webkit-scrollbar,
+.sponsorship-table-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.sponsorship-feed-scroll::-webkit-scrollbar-track,
+.sponsorship-cards-scroll::-webkit-scrollbar-track,
+.sponsorship-table-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sponsorship-feed-scroll::-webkit-scrollbar-thumb,
+.sponsorship-cards-scroll::-webkit-scrollbar-thumb,
+.sponsorship-table-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 107, 53, 0.35);
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+.sponsorship-feed-scroll:hover::-webkit-scrollbar-thumb,
+.sponsorship-cards-scroll:hover::-webkit-scrollbar-thumb,
+.sponsorship-table-scroll:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 107, 53, 0.65);
+}
+.sponsorship-feed-scroll::-webkit-scrollbar-thumb:hover,
+.sponsorship-cards-scroll::-webkit-scrollbar-thumb:hover,
+.sponsorship-table-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
 /* Animation for loading states */
 @keyframes pulse {
   0%, 100% {
