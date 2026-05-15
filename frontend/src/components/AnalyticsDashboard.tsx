@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart3, Calendar, Target, Download, TrendingUp, AlertTriangle, CheckCircle, Filter, Eye, Heart, Brain, DollarSign, Shield } from 'lucide-react';
+import { BarChart3, Calendar, Target, Download, TrendingUp, AlertTriangle, CheckCircle, Filter, Eye, Heart, Brain, DollarSign, Shield, Zap } from 'lucide-react';
 import { AnalyticsDashboardProps, TabType, BrandAppearance, AnalysisResponse, MultiVideoAnalysisResponse } from '../types';
 import BrandMetricsCard from './BrandMetricsCard';
 import TimelineChart from './TimelineChart';
@@ -10,6 +10,7 @@ import EngagementMetrics from './insights/EngagementMetrics';
 import BrandPerformance from './insights/BrandPerformance';
 import BusinessImpact from './insights/BusinessImpact';
 import ContentQuality from './insights/ContentQuality';
+import SponsorshipIntelTab from './SponsorshipIntelTab';
 import ApiService from '../services/api';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
@@ -68,6 +69,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ analysisData, i
 
   const tabs = [
     { id: 'overview' as TabType, label: 'Overview', icon: BarChart3 },
+    { id: 'sponsorship-intel' as TabType, label: 'Sponsorship Intel', icon: Zap },
     { id: 'timeline' as TabType, label: 'Timeline', icon: Calendar },
     { id: 'context' as TabType, label: 'Context Analysis', icon: Target },
     { id: 'reach-awareness' as TabType, label: 'Reach & Awareness', icon: Eye },
@@ -496,6 +498,10 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ analysisData, i
           
           {activeTab === 'content-quality' && (
             <ContentQuality analysisData={analysisData} />
+          )}
+
+          {activeTab === 'sponsorship-intel' && (
+            <SponsorshipIntelTab analysisData={analysisData} isMultiVideo={isMultiVideo} />
           )}
         </div>
       </Card>

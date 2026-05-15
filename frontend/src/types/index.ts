@@ -306,7 +306,7 @@ export interface UseAnalysisReturn {
 }
 
 // Utility Types
-export type TabType = 'overview' | 'timeline' | 'context' | 'reach-awareness' | 'engagement' | 'brand-performance' | 'business-impact' | 'content-quality';
+export type TabType = 'overview' | 'timeline' | 'context' | 'reach-awareness' | 'engagement' | 'brand-performance' | 'business-impact' | 'content-quality' | 'sponsorship-intel';
 export type AppStep = 'connect' | 'brand-search' | 'video-selection' | 'analysis' | 'results';
 
 export interface TabItem {
