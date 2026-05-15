@@ -685,7 +685,7 @@ def gather_brand_intelligence(brand_name, enable_web_search=True):
                     return
                 
                 response = openai_client.chat.completions.create(
-                    model="gpt-4",
+                    model="gpt-4o-mini",
                     messages=[
                         {"role": "system", "content": "You are a market research analyst. Provide factual, accurate information about companies."},
                         {"role": "user", "content": info_prompt}
@@ -761,7 +761,7 @@ def gather_brand_intelligence(brand_name, enable_web_search=True):
                     return
                 
                 news_response = openai_client.chat.completions.create(
-                    model="gpt-4",
+                    model="gpt-4o-mini",
                     messages=[
                         {"role": "system", "content": "You are a business news analyst. Always return valid JSON arrays only."},
                         {"role": "user", "content": news_prompt}
@@ -898,7 +898,12 @@ def calculate_ai_contextual_score(brand_data, video_duration, brand_name):
         # Calculate placement effectiveness metrics
         placement_metrics = calculate_placement_effectiveness(brand_data, video_duration, brand_name)
         
-        # Prepare data for AI analysis
+        # Prepare data for AI analysis. We cap the prompt payload at
+        # MAX_APPEARANCES_FOR_PROMPT clips per brand to stay well under any
+        # reasonable OpenAI context window even when Marengo returns hundreds
+        # of fine-grained search hits. The full list is still used for the
+        # raw metrics computation; only the LLM-bound summary is trimmed.
+        MAX_APPEARANCES_FOR_PROMPT = 30
         appearances_summary = []
         total_duration = 0
         for app in brand_data:
@@ -906,7 +911,7 @@ def calculate_ai_contextual_score(brand_data, video_duration, brand_name):
             if 'timeline' in app and len(app['timeline']) == 2:
                 duration = app['timeline'][1] - app['timeline'][0]
                 total_duration += duration
-            
+
             appearances_summary.append({
                 'duration_seconds': duration,
                 'type': app.get('type', 'unknown'),
@@ -914,8 +919,20 @@ def calculate_ai_contextual_score(brand_data, video_duration, brand_name):
                 'prominence': app.get('prominence', 'unknown'),
                 'sentiment': app.get('sentiment_context', 'neutral'),
                 'attention': app.get('viewer_attention', 'medium'),
-                'description': app.get('description', '')
+                # Truncate long descriptions (Marengo embeds transcripts in
+                # them which can be 100+ tokens each).
+                'description': (app.get('description', '') or '')[:200],
             })
+
+        # Keep the highest-prominence + longest-duration clips. Sort by a
+        # composite signal so the LLM sees the most informative appearances.
+        if len(appearances_summary) > MAX_APPEARANCES_FOR_PROMPT:
+            prominence_rank = {'primary': 3, 'secondary': 2, 'background': 1, 'unknown': 0}
+            appearances_summary.sort(
+                key=lambda a: (prominence_rank.get(a.get('prominence', 'unknown'), 0), a.get('duration_seconds', 0)),
+                reverse=True,
+            )
+            appearances_summary = appearances_summary[:MAX_APPEARANCES_FOR_PROMPT]
         
         # Determine video type/context
         video_context = "sports event"  # Could be enhanced with actual video analysis
@@ -1032,7 +1049,7 @@ def calculate_ai_contextual_score(brand_data, video_duration, brand_name):
                 }
             
             response = openai_client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "You are a brand sponsorship analytics expert. Always return valid JSON."},
                     {"role": "user", "content": scoring_prompt}
@@ -1174,7 +1191,7 @@ def generate_executive_summary(brand_metrics, video_duration, video_title):
             }
         
         response = openai_client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a C-level brand strategy consultant specializing in sports sponsorship ROI."},
                 {"role": "user", "content": exec_prompt}
@@ -1246,7 +1263,7 @@ def generate_competitive_analysis(detected_brands, video_context="sports event")
         """
         
         response = openai_client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a market research analyst. Always return valid JSON with realistic competitive data."},
                 {"role": "user", "content": competitive_prompt}
