@@ -687,11 +687,12 @@ def gather_brand_intelligence(brand_name, enable_web_search=True):
                 response = openai_client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[
-                        {"role": "system", "content": "You are a market research analyst. Provide factual, accurate information about companies."},
+                        {"role": "system", "content": "You are a market research analyst. Provide factual, accurate information about companies. Always respond with a valid JSON object."},
                         {"role": "user", "content": info_prompt}
                     ],
                     temperature=0.3,
-                    max_tokens=800
+                    max_tokens=800,
+                    response_format={"type": "json_object"},
                 )
                 
                 # Log the response for debugging
@@ -1051,11 +1052,12 @@ def calculate_ai_contextual_score(brand_data, video_duration, brand_name):
             response = openai_client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You are a brand sponsorship analytics expert. Always return valid JSON."},
+                    {"role": "system", "content": "You are a brand sponsorship analytics expert. Always respond with a single valid JSON object."},
                     {"role": "user", "content": scoring_prompt}
                 ],
                 temperature=0.2,
-                max_tokens=1000
+                max_tokens=1000,
+                response_format={"type": "json_object"},
             )
             
             # Process the response
@@ -1193,11 +1195,12 @@ def generate_executive_summary(brand_metrics, video_duration, video_title):
         response = openai_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are a C-level brand strategy consultant specializing in sports sponsorship ROI."},
+                {"role": "system", "content": "You are a C-level brand strategy consultant specializing in sports sponsorship ROI. Always respond with a single valid JSON object."},
                 {"role": "user", "content": exec_prompt}
             ],
             temperature=0.3,
-            max_tokens=1500
+            max_tokens=1500,
+            response_format={"type": "json_object"},
         )
         
         return json.loads(response.choices[0].message.content)
@@ -1265,11 +1268,12 @@ def generate_competitive_analysis(detected_brands, video_context="sports event")
         response = openai_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are a market research analyst. Always return valid JSON with realistic competitive data."},
+                {"role": "system", "content": "You are a market research analyst. Always respond with a single valid JSON object containing realistic competitive data."},
                 {"role": "user", "content": competitive_prompt}
             ],
             temperature=0.3,
-            max_tokens=1200
+            max_tokens=1200,
+            response_format={"type": "json_object"}
         )
         
         # Parse the AI response
