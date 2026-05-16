@@ -1,0 +1,67 @@
+/*
+ * @twelvelabs/strand — Font Face Declarations
+ *
+ * Noto Sans: loaded from Google Fonts CDN (playground fallback body font)
+ * Geist: loaded from CDN (marketing site technical text)
+ * IBM Plex Mono: loaded from Google Fonts CDN
+ * Milling: licensed brand font — requires local @font-face declarations (see below)
+ *
+ * Usage:
+ *   @import '@twelvelabs/strand/css/fonts.css';
+ */
+
+/* Noto Sans — Playground fallback body font (replaces Inter) */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+
+/* Geist — Technical/product UI text (marketing site) */
+@import url('https://cdn.jsdelivr.net/npm/geist@1/dist/fonts/geist-sans/style.min.css');
+
+/* IBM Plex Mono — Code font */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+
+/* Inter — Legacy fallback (kept for backwards compatibility with existing apps) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/*
+ * Milling — Brand font family (licensed, self-hosted)
+ *
+ * The playground and marketing site use FIVE Milling variants:
+ *
+ *   Milling Duplex 1mm         — Regular weight (400), primary body + headline
+ *   Milling Duplex 1mm Italic  — Italic variant
+ *   Milling Triplex 1mm        — Bold weight (700), heavy headlines
+ *   Milling Triplex 1,5mm      — Extra-bold (701+), nav labels
+ *   Milling Trial Duplex 1mm   — Alternate/trial, numbering
+ *
+ * All served as woff2 on twelvelabs.io. To use locally, add @font-face
+ * declarations pointing to your font files:
+ *
+ *   @font-face {
+ *     font-family: 'Milling Duplex 1mm';
+ *     src: url('/fonts/MillingDuplex1mm-Regular.woff2') format('woff2');
+ *     font-weight: 400;
+ *     font-display: swap;
+ *   }
+ *   @font-face {
+ *     font-family: 'Milling Duplex 1mm';
+ *     src: url('/fonts/MillingDuplex1mm-Italic.woff2') format('woff2');
+ *     font-weight: 400;
+ *     font-style: italic;
+ *     font-display: swap;
+ *   }
+ *   @font-face {
+ *     font-family: 'Milling Triplex 1mm';
+ *     src: url('/fonts/MillingTriplex1mm-Bold.woff2') format('woff2');
+ *     font-weight: 700;
+ *     font-display: swap;
+ *   }
+ *   @font-face {
+ *     font-family: 'Milling Triplex 1,5mm';
+ *     src: url('/fonts/MillingTriplex1.5mm-ExtraBold.woff2') format('woff2');
+ *     font-weight: 701;
+ *     font-display: swap;
+ *   }
+ *
+ * Request font files from #team-design on Slack.
+ * Without Milling, the stack falls back to Noto Sans → Helvetica → Arial.
+ */

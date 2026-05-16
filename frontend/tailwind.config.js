@@ -1,5 +1,12 @@
+// Use the vendored @twelvelabs/strand design system as a Tailwind preset.
+// This adds the masterbrand palette (mb-green / mb-orange / mb-pink / mb-peach),
+// the Strand gray ramp (gray-50…gray-700 — overrides the default Tailwind gray),
+// brand font families, spacing tokens, etc.
+const strandPreset = require('./strand/tailwind-preset.js');
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  presets: [strandPreset],
   darkMode: ['class'],
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",

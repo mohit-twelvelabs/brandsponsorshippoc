@@ -1,0 +1,9 @@
+{
+  "codeConnect": {
+    "parser": "react",
+    "include": ["components/**/*.figma.tsx"],
+    "exclude": ["node_modules/**", "dist/**"],
+    "label": "Strand (React + Tailwind)",
+    "interactiveSetupFigmaFileUrl": "https://www.figma.com/design/cfmWlO6lq5N4U6cHoquqpw/TLDS-STYLES-UI-MCP-v1.0.2-021126"
+  }
+}

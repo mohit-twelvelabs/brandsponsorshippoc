@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, ArrowLeft, Plug } from 'lucide-react';
+import { ArrowLeft, Plug } from 'lucide-react';
+import TwelveLabsWordmark from './components/TwelveLabsWordmark';
 import BrandSearch from './components/BrandSearch';
 import VideoSelector from './components/VideoSelector';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
@@ -172,15 +173,17 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-green-500 via-orange-500 to-pink-500 border-b-2 shadow-md sticky top-0 z-40">
+      {/* Header — TwelveLabs masterbrand gradient (green → orange → pink) */}
+      <header className="border-b border-brand-charcoal/10 sticky top-0 z-40 shadow-sm"
+              style={{ background: 'linear-gradient(90deg, #60E21B 0%, #FABA17 50%, #FFB0CD 100%)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <BarChart3 className="w-8 h-8 text-white mr-3" />
+            <div className="flex items-center gap-4">
+              <TwelveLabsWordmark className="h-5 w-auto text-brand-charcoal" aria-label="TwelveLabs" />
+              <div className="hidden sm:block w-px h-8 bg-brand-charcoal/20" />
               <div>
-                <Text as="h1" className="text-xl text-white font-bold">Brand ROI Analytics</Text>
-                <Text as="p" className="text-sm text-white/80">Powered by TwelveLabs AI</Text>
+                <Text as="h1" className="text-xl text-brand-charcoal font-bold leading-tight">Brand ROI Analytics</Text>
+                <Text as="p" className="text-xs text-brand-charcoal/70 leading-tight">Sponsorship intelligence powered by Marengo</Text>
               </div>
             </div>
             
@@ -189,7 +192,7 @@ function App() {
                 <button
                   type="button"
                   onClick={() => setCurrentStep('connect')}
-                  className="flex items-center text-xs bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-full"
+                  className="flex items-center text-xs bg-brand-charcoal/10 hover:bg-brand-charcoal/20 text-brand-charcoal px-3 py-1.5 rounded-full font-medium"
                   title="Switch account or index"
                 >
                   <Plug className="w-3 h-3 mr-1" />
@@ -204,7 +207,7 @@ function App() {
                   variant="secondary"
                   size="sm"
                   onClick={handleGoBack}
-                  className="flex items-center bg-orange-500 text-white hover:bg-orange-600 border-orange-500 hover:border-orange-600"
+                  className="flex items-center bg-brand-charcoal text-brand-white hover:bg-brand-charcoal/85 border-brand-charcoal"
                   disabled={analysisLoading}
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
@@ -232,26 +235,27 @@ function App() {
         {/* Step Indicator */}
         <div className="flex justify-center mb-8">
           <div className="flex items-center space-x-4">
-            {['connect', 'brand-search', 'video-selection', 'analysis', 'results'].map((step, index) => (
-              <div key={step} className="flex items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  currentStep === step 
-                    ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white' 
-                    : index < ['connect', 'brand-search', 'video-selection', 'analysis', 'results'].indexOf(currentStep)
-                      ? 'bg-green-500 text-white'
-                      : 'bg-gray-200 text-gray-600'
-                }`}>
-                  {index + 1}
+            {['connect', 'brand-search', 'video-selection', 'analysis', 'results'].map((step, index) => {
+              const currentIdx = ['connect', 'brand-search', 'video-selection', 'analysis', 'results'].indexOf(currentStep);
+              const isActive = currentStep === step;
+              const isComplete = index < currentIdx;
+              return (
+                <div key={step} className="flex items-center">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                    isActive
+                      ? 'bg-mb-green text-brand-charcoal ring-2 ring-mb-green/30'
+                      : isComplete
+                        ? 'bg-mb-green-dark text-brand-white'
+                        : 'bg-gray-200 text-gray-500'
+                  }`}>
+                    {index + 1}
+                  </div>
+                  {index < 4 && (
+                    <div className={`w-8 h-0.5 mx-2 ${isComplete ? 'bg-mb-green-dark' : 'bg-gray-200'}`} />
+                  )}
                 </div>
-                {index < 4 && (
-                  <div className={`w-8 h-0.5 mx-2 ${
-                    index < ['connect', 'brand-search', 'video-selection', 'analysis', 'results'].indexOf(currentStep)
-                      ? 'bg-green-500'
-                      : 'bg-gray-200'
-                  }`} />
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

@@ -1,0 +1,28 @@
+{
+  "name": "@twelvelabs/strand",
+  "version": "1.1.0",
+  "description": "TwelveLabs shared design system — tokens, Tailwind preset, CSS variables, Python brand constants, Figma Code Connect",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./tailwind-preset": "./tailwind-preset.js",
+    "./tokens/*": "./tokens/*",
+    "./css/*": "./css/*",
+    "./python/*": "./python/*"
+  },
+  "files": [
+    "index.js",
+    "tailwind-preset.js",
+    "tokens/",
+    "css/",
+    "python/",
+    "components/",
+    "figma.config.json"
+  ],
+  "keywords": ["twelvelabs", "design-system", "tokens", "tailwind", "figma", "code-connect"],
+  "license": "UNLICENSED",
+  "private": true,
+  "devDependencies": {
+    "@figma/code-connect": "^1.0.0"
+  }
+}
