@@ -2145,6 +2145,19 @@ def combine_video_analyses(individual_analyses, video_ids):
     for brand_name, metrics in combined_brand_metrics.items():
         # Convert set to list for contexts
         metrics['contexts'] = list(metrics['contexts'])
+
+        # Propagate ai_insights from the first per-video analysis that has them
+        # so the multi-video Brand Performance card has the same enrichment as
+        # the single-video flow. Without this, multi-video runs always show the
+        # "AI analysis is required" fallback even when per-video AI succeeded.
+        if not metrics.get('ai_insights'):
+            for analysis in individual_analyses:
+                for b in analysis.get('brand_metrics', []):
+                    if b.get('brand') == brand_name and b.get('ai_insights'):
+                        metrics['ai_insights'] = b['ai_insights']
+                        break
+                if metrics.get('ai_insights'):
+                    break
         
         # Calculate averages (simplified - could be more sophisticated)
         if metrics['total_appearances'] > 0:
