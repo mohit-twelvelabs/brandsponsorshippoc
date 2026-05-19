@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { AlertTriangle, CheckCircle, Info, X, XCircle } from 'lucide-react';
 import { AlertProps } from '../types';
-import { Alert as RetroAlert } from './ui/Alert';
 
 const Alert: React.FC<AlertProps> = ({ type, message, isVisible, onClose }) => {
   // Auto-close after 5 seconds
@@ -16,54 +15,62 @@ const Alert: React.FC<AlertProps> = ({ type, message, isVisible, onClose }) => {
 
   if (!isVisible) return null;
 
-  const getStatus = () => {
-    switch (type) {
-      case 'success':
-        return 'success';
-      case 'error':
-        return 'error';
-      case 'warning':
-        return 'warning';
-      case 'info':
-      default:
-        return 'info';
-    }
+  const titles: Record<AlertProps['type'], string> = {
+    success: 'Success',
+    error: 'Error',
+    warning: 'Warning',
+    info: 'Info',
+  };
+
+  const iconColorClass: Record<AlertProps['type'], string> = {
+    success: 'text-mb-green-dark',
+    error: 'text-error',
+    warning: 'text-mb-orange-dark',
+    info: 'text-info',
+  };
+
+  const leftBorderClass: Record<AlertProps['type'], string> = {
+    success: 'border-l-mb-green',
+    error: 'border-l-error',
+    warning: 'border-l-mb-orange',
+    info: 'border-l-info',
   };
 
   const getIcon = () => {
+    const cls = `w-5 h-5 ${iconColorClass[type]}`;
     switch (type) {
       case 'success':
-        return <CheckCircle className="w-5 h-5" />;
+        return <CheckCircle className={cls} />;
       case 'error':
-        return <XCircle className="w-5 h-5" />;
+        return <XCircle className={cls} />;
       case 'warning':
-        return <AlertTriangle className="w-5 h-5" />;
+        return <AlertTriangle className={cls} />;
       case 'info':
       default:
-        return <Info className="w-5 h-5" />;
+        return <Info className={cls} />;
     }
   };
 
   return (
-    <div className="fixed top-4 right-4 z-50 max-w-md animate-slide-up">
-      <RetroAlert status={getStatus()} className="shadow-lg">
-        <div className="flex items-start">
-          <div className="flex-shrink-0">
-            {getIcon()}
-          </div>
-          <div className="ml-3 flex-1">
-            <RetroAlert.Description>{message}</RetroAlert.Description>
-          </div>
-          <div className="ml-4 flex-shrink-0">
-            <button
-              onClick={onClose}
-              className="inline-flex hover:opacity-70 focus:outline-none"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+    <div
+      role="alert"
+      aria-live="assertive"
+      className={`fixed bottom-6 right-6 z-50 max-w-sm rounded-xl border border-border bg-card shadow-lg p-4 border-l-4 ${leftBorderClass[type]} animate-slide-up`}
+    >
+      <div className="flex items-start gap-3">
+        <div className="flex-shrink-0 mt-0.5">{getIcon()}</div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground">{titles[type]}</p>
+          <p className="text-sm text-text-secondary mt-0.5">{message}</p>
         </div>
-      </RetroAlert>
+        <button
+          onClick={onClose}
+          aria-label="Dismiss notification"
+          className="flex-shrink-0 text-text-tertiary hover:text-foreground transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   );
 };

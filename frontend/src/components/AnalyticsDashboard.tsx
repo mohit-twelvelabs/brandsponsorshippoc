@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { BarChart3, Calendar, Target, Download, TrendingUp, AlertTriangle, CheckCircle, Filter, Eye, Heart, Brain, DollarSign, Shield, Zap } from 'lucide-react';
-import { AnalyticsDashboardProps, TabType, BrandAppearance, AnalysisResponse, MultiVideoAnalysisResponse } from '../types';
+import { AnalyticsDashboardProps, TabType, BrandAppearance, MultiVideoAnalysisResponse } from '../types';
 import BrandMetricsCard from './BrandMetricsCard';
 import TimelineChart from './TimelineChart';
 import PlacementTimeline from './PlacementTimeline';
-import SponsorshipBreakdownChart from './SponsorshipBreakdownChart';
 import ReachAwarenessMetrics from './insights/ReachAwarenessMetrics';
 import EngagementMetrics from './insights/EngagementMetrics';
 import BrandPerformance from './insights/BrandPerformance';
@@ -12,10 +11,8 @@ import BusinessImpact from './insights/BusinessImpact';
 import ContentQuality from './insights/ContentQuality';
 import SponsorshipIntelTab from './SponsorshipIntelTab';
 import ApiService from '../services/api';
-import { Card } from './ui/Card';
-import { Button } from './ui/Button';
-import { Text } from './ui/Text';
 import { Badge } from './ui/Badge';
+import { formatTime, formatNumber } from '../utils/formatters';
 
 const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ analysisData, isLoading, isMultiVideo = false }) => {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -29,7 +26,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ analysisData, i
 
   const getSummaryData = () => {
     if (!analysisData) return null;
-    
+
     if (isMultiVideoData(analysisData)) {
       return {
         event_title: `Multi-Video Analysis (${analysisData.combined_summary.total_videos} videos)`,
@@ -48,7 +45,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ analysisData, i
 
   const getBrandMetrics = () => {
     if (!analysisData) return [];
-    
+
     if (isMultiVideoData(analysisData)) {
       return analysisData.combined_brand_metrics;
     } else {
@@ -58,7 +55,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ analysisData, i
 
   const getRawDetections = () => {
     if (!analysisData) return [];
-    
+
     if (isMultiVideoData(analysisData)) {
       // Combine all raw detections from individual analyses
       return analysisData.individual_analyses.flatMap(analysis => analysis.raw_detections || []);
@@ -99,44 +96,15 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ analysisData, i
     return detections.filter(detection => detection.sponsorship_category === sponsorshipFilter);
   };
 
-  // Calculate overall sponsorship breakdown
-  const getOverallSponsorshipBreakdown = () => {
-    const brandMetrics = getBrandMetrics();
-    if (!brandMetrics || brandMetrics.length === 0) return null;
-
-    let totalAdCount = 0;
-    let totalInGameCount = 0;
-    let totalAdTime = 0;
-    let totalInGameTime = 0;
-
-    brandMetrics.forEach(brand => {
-      if (brand.sponsorship_breakdown) {
-        totalAdCount += brand.sponsorship_breakdown.ad_placements.count;
-        totalInGameCount += brand.sponsorship_breakdown.in_game_placements.count;
-        totalAdTime += brand.sponsorship_breakdown.ad_placements.exposure_time;
-        totalInGameTime += brand.sponsorship_breakdown.in_game_placements.exposure_time;
-      }
-    });
-
-    const totalTime = totalAdTime + totalInGameTime;
-    
-    return {
-      ad_placements: {
-        count: totalAdCount,
-        exposure_time: totalAdTime,
-        percentage_of_total: totalTime > 0 ? Math.round((totalAdTime / totalTime) * 100 * 10) / 10 : 0
-      },
-      in_game_placements: {
-        count: totalInGameCount,
-        exposure_time: totalInGameTime,
-        percentage_of_total: totalTime > 0 ? Math.round((totalInGameTime / totalTime) * 100 * 10) / 10 : 0
-      }
-    };
+  // Compute hero KPIs
+  const getTotalSponsorSeconds = () => {
+    const metrics = getBrandMetrics();
+    return metrics.reduce((sum, b) => sum + (b.total_exposure_time || 0), 0);
   };
 
   if (isLoading) {
     return (
-      <Card className="p-6">
+      <div className="rounded-2xl border border-border bg-card p-6 lg:p-8 shadow-md">
         <div className="animate-pulse">
           <div className="h-6 bg-muted rounded w-1/4 mb-6"></div>
           <div className="space-y-4">
@@ -145,201 +113,196 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ analysisData, i
             <div className="h-32 bg-muted rounded"></div>
           </div>
         </div>
-      </Card>
+      </div>
     );
   }
 
   if (!analysisData) {
     return (
-      <Card className="p-6 text-center">
-        <div className="text-muted-foreground mb-4">📊</div>
-        <Text as="h3" className="mb-2">No Analysis Available</Text>
-        <Text as="p" className="text-muted-foreground">Upload a video to see brand sponsorship analytics</Text>
-      </Card>
+      <div className="rounded-2xl border border-border bg-card p-6 lg:p-8 shadow-md text-center">
+        <p className="text-text-secondary mb-4">No Analysis Available</p>
+        <p className="text-text-tertiary text-sm">Upload a video to see brand sponsorship analytics</p>
+      </div>
     );
   }
 
+  const summary = getSummaryData();
+  const brandMetrics = getBrandMetrics();
+  const dominantBrand = summary?.top_performing_brand || 'All Brands';
+  const totalImpressions = summary?.total_brand_appearances ?? 0;
+  const totalBrands = summary?.total_brands_detected ?? 0;
+  const totalVideos = isMultiVideoData(analysisData) ? analysisData.combined_summary.total_videos : 1;
+  const sponsorSeconds = getTotalSponsorSeconds();
+
   return (
-    <div className="space-y-6">
-      {/* Executive Summary */}
-      <Card className="p-6">
-        <div className="flex justify-between items-start mb-6">
-          <Card.Title className="p-0 flex items-center">
-            <BarChart3 className="w-6 h-6 mr-2 text-primary" />
-            Executive Summary
-          </Card.Title>
-          
-          <div className="flex space-x-2">
-            <Button
-              onClick={() => handleExport('pdf')}
-              disabled={exportLoading}
-              size="sm"
-              className="flex items-center"
-            >
-              <Download className="w-4 h-4 mr-1" />
-              Export PDF
-            </Button>
-            <Button
-              onClick={() => handleExport('csv')}
-              disabled={exportLoading}
-              variant="secondary"
-              size="sm"
-              className="flex items-center"
-            >
-              <Download className="w-4 h-4 mr-1" />
-              Export CSV
-            </Button>
-          </div>
-        </div>
+    <div className="space-y-8">
+      {/* ── Hero Band ── */}
+      <div className="rounded-2xl border border-border bg-card shadow-md overflow-hidden">
+        {/* Masterbrand stripe */}
+        <div className="h-1 w-full rounded-none bg-gradient-to-r from-mb-green via-mb-orange to-mb-pink" />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <Card className="p-4 bg-accent/10 min-h-[100px] flex flex-col">
-            <Text as="h4" className="text-sm font-medium text-muted-foreground mb-2">
-              {isMultiVideoData(analysisData) ? 'Analysis' : 'Event'}
-            </Text>
-            <Text as="p" className="text-sm font-semibold flex-grow">{getSummaryData()?.event_title}</Text>
-          </Card>
-          
-          <Card className="p-4 bg-accent/10 min-h-[100px] flex flex-col">
-            <Text as="h4" className="text-sm font-medium text-muted-foreground mb-2">
-              {isMultiVideoData(analysisData) ? 'Total Duration' : 'Duration'}
-            </Text>
-            <Text as="p" className="text-lg font-bold flex-grow">{getSummaryData()?.video_duration_minutes} min</Text>
-          </Card>
-          
-          <Card className="p-4 bg-accent/10 min-h-[100px] flex flex-col">
-            <Text as="h4" className="text-sm font-medium text-muted-foreground mb-2">Brands Detected</Text>
-            <Text as="p" className="text-lg font-bold flex-grow">{getSummaryData()?.total_brands_detected}</Text>
-          </Card>
-          
-          <Card className="p-4 bg-accent/10 min-h-[100px] flex flex-col">
-            <Text as="h4" className="text-sm font-medium text-muted-foreground mb-2">Total Appearances</Text>
-            <Text as="p" className="text-lg font-bold flex-grow">{getSummaryData()?.total_brand_appearances}</Text>
-          </Card>
-          
-          <Card className="p-4 bg-accent/10 min-h-[100px] flex flex-col">
-            <Text as="h4" className="text-sm font-medium text-muted-foreground mb-2">Top Brand</Text>
-            <div className="flex-grow">
-              <Text as="p" className="text-sm font-semibold">{getSummaryData()?.top_performing_brand || 'N/A'}</Text>
-              <Text as="p" className="text-xs text-muted-foreground">Score: {getSummaryData()?.top_brand_score}/10</Text>
+        <div className="p-6 lg:p-8">
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+            {/* Left: eyebrow + H2 + subtitle */}
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-mb-green-dark mb-2">
+                INSIGHTS
+              </p>
+              <h2 className="text-2xl font-bold tracking-tight text-foreground mb-2">
+                {dominantBrand}
+              </h2>
+              <p className="text-base text-text-secondary">
+                {formatNumber(totalImpressions)} impressions across {totalVideos} video{totalVideos !== 1 ? 's' : ''} &middot; {formatTime(sponsorSeconds)} of on-screen exposure
+              </p>
+              {/* Export actions (ghost buttons) */}
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => handleExport('pdf')}
+                  disabled={exportLoading}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-text-secondary hover:text-foreground hover:bg-card transition-colors text-sm font-medium border border-border disabled:opacity-50"
+                >
+                  <Download className="w-4 h-4" />
+                  Export PDF
+                </button>
+                <button
+                  onClick={() => handleExport('csv')}
+                  disabled={exportLoading}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-text-secondary hover:text-foreground hover:bg-card transition-colors text-sm font-medium border border-border disabled:opacity-50"
+                >
+                  <Download className="w-4 h-4" />
+                  Export CSV
+                </button>
+              </div>
             </div>
-          </Card>
-        </div>
 
-        {/* Multi-video specific info */}
-        {isMultiVideoData(analysisData) && (
-          <Card className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500">
-            <Text as="h4" className="text-sm font-medium mb-2 text-blue-800">Videos Analyzed</Text>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-              {analysisData.combined_summary.videos_analyzed.map((video, index) => (
-                <div key={video.video_id} className="text-xs p-2 bg-white rounded border">
-                  <Text as="p" className="font-medium">{video.filename}</Text>
-                  <Text as="p" className="text-muted-foreground">{video.duration_minutes} min</Text>
-                </div>
-              ))}
+            {/* Right: 3 KPI tiles */}
+            <div className="flex flex-row gap-3 flex-shrink-0 flex-wrap">
+              <div className="rounded-2xl border border-border bg-card p-5 flex flex-col gap-1 min-w-[120px]">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-text-secondary">Total Impressions</p>
+                <p className="text-3xl lg:text-4xl font-bold tracking-tight text-foreground tabular-nums">
+                  {formatNumber(totalImpressions)}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-border bg-card p-5 flex flex-col gap-1 min-w-[120px]">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-text-secondary">Sponsor-Seconds</p>
+                <p className="text-3xl lg:text-4xl font-bold tracking-tight text-foreground tabular-nums">
+                  {formatTime(sponsorSeconds)}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-border bg-card p-5 flex flex-col gap-1 min-w-[120px]">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-text-secondary">Unique Brands</p>
+                <p className="text-3xl lg:text-4xl font-bold tracking-tight text-foreground tabular-nums">
+                  {totalBrands}
+                </p>
+              </div>
             </div>
-          </Card>
-        )}
-        
-        {/* ROI Quick Insights */}
-        {getBrandMetrics()[0]?.ai_insights && !getBrandMetrics()[0]?.ai_insights?.error ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-            {/* Placement Effectiveness */}
-            <Card className="p-4 border-l-4 border-green-500">
-              <div className="flex items-start justify-between">
-                <div>
-                  <Text as="h5" className="text-sm font-medium mb-1">Placement Effectiveness</Text>
-                  <Text as="p" className="text-2xl font-bold">
-                    {Math.round(getBrandMetrics()[0]?.ai_insights?.placement_effectiveness_score || 0)}%
-                  </Text>
-                  <Text as="p" className="text-xs text-muted-foreground">
-                    {getBrandMetrics()[0]?.ai_insights?.roi_assessment?.value_rating || 'unknown'} value for money
-                  </Text>
-                </div>
-                <CheckCircle className="w-5 h-5 text-green-500" />
-              </div>
-            </Card>
-            
-            {/* Key Opportunity */}
-            <Card className="p-4 border-l-4 border-yellow-500">
-              <div className="flex items-start justify-between">
-                <div>
-                  <Text as="h5" className="text-sm font-medium mb-1">Optimization Potential</Text>
-                  <Text as="p" className="text-sm font-medium">
-                    {getBrandMetrics()[0]?.ai_insights?.recommendations?.immediate_actions?.[0] || "Review placement strategy"}
-                  </Text>
-                </div>
-                <TrendingUp className="w-5 h-5 text-yellow-500" />
-              </div>
-            </Card>
-            
-            {/* Alert */}
-            <Card className="p-4 border-l-4 border-red-500">
-              <div className="flex items-start justify-between">
-                <div>
-                  <Text as="h5" className="text-sm font-medium mb-1">Missed Opportunities</Text>
-                  <Text as="p" className="text-sm font-medium">
-                    {getBrandMetrics()[0]?.ai_insights?.placement_analysis?.missed_opportunities?.length || 0} key moments
-                  </Text>
-                  <Text as="p" className="text-xs text-muted-foreground">
-                    Could improve ROI by {Math.round((100 - (getBrandMetrics()[0]?.ai_insights?.placement_effectiveness_score || 0)) * 0.3)}%
-                  </Text>
-                </div>
-                <AlertTriangle className="w-5 h-5 text-red-500" />
-              </div>
-            </Card>
           </div>
-        ) : getBrandMetrics()[0]?.ai_insights?.error ? (
-          <Card className="p-4 mt-4 border-l-4 border-red-500 bg-red-50">
-            <div className="flex items-center">
-              <AlertTriangle className="w-5 h-5 text-red-500 mr-2" />
+
+          {/* Multi-video info */}
+          {isMultiVideoData(analysisData) && (
+            <div className="mt-6 pt-5 border-t border-border-light">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-mb-green-dark mb-3">Videos Analyzed</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                {analysisData.combined_summary.videos_analyzed.map((video) => (
+                  <div key={video.video_id} className="text-xs p-3 rounded-xl border border-border-light bg-background">
+                    <p className="font-medium text-foreground">{video.filename}</p>
+                    <p className="text-text-tertiary">{video.duration_minutes} min</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ROI Quick Insights (preserved, restyled) */}
+          {brandMetrics[0]?.ai_insights && !brandMetrics[0]?.ai_insights?.error ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+              <div className="rounded-2xl border border-border bg-card p-5 flex flex-col gap-1">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-text-secondary mb-1">Placement Effectiveness</p>
+                    <p className="text-3xl font-bold tracking-tight text-foreground tabular-nums">
+                      {Math.round(brandMetrics[0]?.ai_insights?.placement_effectiveness_score || 0)}%
+                    </p>
+                    <p className="text-xs text-text-tertiary mt-1">
+                      {brandMetrics[0]?.ai_insights?.roi_assessment?.value_rating || 'unknown'} value for money
+                    </p>
+                  </div>
+                  <CheckCircle className="w-5 h-5 text-mb-green-dark flex-shrink-0" />
+                </div>
+              </div>
+              <div className="rounded-2xl border border-border bg-card p-5 flex flex-col gap-1">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-text-secondary mb-1">Optimization Potential</p>
+                    <p className="text-sm font-medium text-foreground mt-1">
+                      {brandMetrics[0]?.ai_insights?.recommendations?.immediate_actions?.[0] || "Review placement strategy"}
+                    </p>
+                  </div>
+                  <TrendingUp className="w-5 h-5 text-mb-orange flex-shrink-0" />
+                </div>
+              </div>
+              <div className="rounded-2xl border border-border bg-card p-5 flex flex-col gap-1">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-text-secondary mb-1">Missed Opportunities</p>
+                    <p className="text-3xl font-bold tracking-tight text-foreground tabular-nums">
+                      {brandMetrics[0]?.ai_insights?.placement_analysis?.missed_opportunities?.length || 0}
+                    </p>
+                    <p className="text-xs text-text-tertiary mt-1">
+                      key moments
+                    </p>
+                  </div>
+                  <AlertTriangle className="w-5 h-5 text-error flex-shrink-0" />
+                </div>
+              </div>
+            </div>
+          ) : brandMetrics[0]?.ai_insights?.error ? (
+            <div className="mt-6 rounded-2xl border border-border bg-card p-5 flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-error flex-shrink-0" />
               <div>
-                <Text as="h5" className="text-sm font-medium">AI Analysis Required</Text>
-                <Text as="p" className="text-xs text-red-600 mt-1">
-                  {getBrandMetrics()[0]?.ai_insights?.error || "AI-powered insights are required for comprehensive ROI analysis"}
-                </Text>
+                <p className="text-sm font-semibold text-foreground">AI Analysis Required</p>
+                <p className="text-xs text-error mt-0.5">
+                  {brandMetrics[0]?.ai_insights?.error || "AI-powered insights are required for comprehensive ROI analysis"}
+                </p>
               </div>
             </div>
-          </Card>
-        ) : null}
-      </Card>
+          ) : null}
+        </div>
+      </div>
 
-      {/* Tabbed Analytics */}
-      <Card>
-        {/* Tab Headers */}
-        <div className="border-b-2">
-          <nav className="flex space-x-8 px-6" aria-label="Tabs">
+      {/* ── Segmented Tab Nav + Content ── */}
+      <div className="space-y-8">
+        {/* Segmented control */}
+        <div className="overflow-x-auto pb-1">
+          <div className="inline-flex p-1 rounded-full bg-card border border-border whitespace-nowrap">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center transition-colors ${
+                  className={
                     activeTab === tab.id
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted'
-                  }`}
+                      ? 'px-4 py-1.5 rounded-full text-sm font-semibold bg-foreground text-brand-white transition-colors flex items-center gap-1.5'
+                      : 'px-4 py-1.5 rounded-full text-sm font-medium text-text-secondary hover:text-foreground transition-colors flex items-center gap-1.5'
+                  }
                 >
-                  <Icon className="w-4 h-4 mr-2" />
+                  <Icon className="w-3.5 h-3.5 flex-shrink-0" />
                   {tab.label}
                 </button>
               );
             })}
-          </nav>
+          </div>
         </div>
 
         {/* Tab Content */}
-        <div className="p-6">
+        <div className="space-y-8">
           {activeTab === 'overview' && (
             <BrandMetricsCard brandMetrics={getBrandMetrics()} />
           )}
-          
+
           {activeTab === 'timeline' && (
-            <div className="space-y-6">
-              <Text as="h3" className="mb-4">Brand Exposure Timeline</Text>
-              
-              {/* Placement Effectiveness Timeline */}
+            <div className="space-y-8">
               {getBrandMetrics()[0]?.ai_insights?.placement_metrics && !getBrandMetrics()[0]?.ai_insights?.error && (
                 <PlacementTimeline
                   brandAppearances={getRawDetections()}
@@ -348,82 +311,81 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ analysisData, i
                   containerId="placementTimeline"
                 />
               )}
-              
-              {/* Original Timeline Chart */}
-              <TimelineChart 
-                brandAppearances={getRawDetections()} 
+
+              <TimelineChart
+                brandAppearances={getRawDetections()}
                 containerId="timelineChart"
                 videoBoundaries={isMultiVideoData(analysisData) ? analysisData.combined_summary.videos_analyzed : undefined}
               />
             </div>
           )}
-          
+
           {activeTab === 'context' && (
             <div>
-              <div className="flex justify-between items-center mb-4">
-                <Text as="h3">Contextual Analysis</Text>
-                
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold tracking-tight text-foreground">Contextual Analysis</h3>
+
                 {/* Sponsorship Category Filter */}
                 <div className="flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-muted-foreground" />
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant={sponsorshipFilter === 'all' ? 'default' : 'outline'}
+                  <Filter className="w-4 h-4 text-text-secondary" />
+                  <div className="inline-flex p-1 rounded-full bg-card border border-border">
+                    <button
                       onClick={() => setSponsorshipFilter('all')}
-                      className="text-xs"
+                      className={sponsorshipFilter === 'all'
+                        ? 'px-4 py-1.5 rounded-full text-sm font-semibold bg-foreground text-brand-white transition-colors'
+                        : 'px-4 py-1.5 rounded-full text-sm font-medium text-text-secondary hover:text-foreground transition-colors'}
                     >
                       All ({getRawDetections().length})
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={sponsorshipFilter === 'ad_placement' ? 'default' : 'outline'}
+                    </button>
+                    <button
                       onClick={() => setSponsorshipFilter('ad_placement')}
-                      className="text-xs"
+                      className={sponsorshipFilter === 'ad_placement'
+                        ? 'px-4 py-1.5 rounded-full text-sm font-semibold bg-foreground text-brand-white transition-colors'
+                        : 'px-4 py-1.5 rounded-full text-sm font-medium text-text-secondary hover:text-foreground transition-colors'}
                     >
-                      📺 Ads ({getRawDetections().filter(d => d.sponsorship_category === 'ad_placement').length})
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={sponsorshipFilter === 'in_game_placement' ? 'default' : 'outline'}
+                      Ads ({getRawDetections().filter(d => d.sponsorship_category === 'ad_placement').length})
+                    </button>
+                    <button
                       onClick={() => setSponsorshipFilter('in_game_placement')}
-                      className="text-xs"
+                      className={sponsorshipFilter === 'in_game_placement'
+                        ? 'px-4 py-1.5 rounded-full text-sm font-semibold bg-foreground text-brand-white transition-colors'
+                        : 'px-4 py-1.5 rounded-full text-sm font-medium text-text-secondary hover:text-foreground transition-colors'}
                     >
-                      🏟️ In-Game ({getRawDetections().filter(d => d.sponsorship_category === 'in_game_placement').length})
-                    </Button>
+                      In-Game ({getRawDetections().filter(d => d.sponsorship_category === 'in_game_placement').length})
+                    </button>
                   </div>
                 </div>
               </div>
-              
+
               {getRawDetections().length > 0 ? (
                 <div className="space-y-4">
                   {getFilteredDetections(getRawDetections()).slice(0, 10).map((detection, index) => (
-                    <Card key={index} className="p-4 bg-muted/10">
+                    <div key={index} className="rounded-2xl border border-border bg-card p-5">
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center">
                           <span className="text-lg mr-2">
-                            {detection.sponsorship_category === 'ad_placement' ? 
+                            {detection.sponsorship_category === 'ad_placement' ?
                               (detection.type === 'ctv_ad' ? '📺' :
                                detection.type === 'overlay_ad' ? '🔳' :
                                detection.type === 'squeeze_ad' ? '📐' :
                                detection.type === 'digital_overlay' ? '📱' : '📺') :
-                              (detection.type === 'logo' ? '🏷️' : 
+                              (detection.type === 'logo' ? '🏷️' :
                                detection.type === 'jersey_sponsor' ? '👕' :
                                detection.type === 'stadium_signage' ? '🏟️' :
                                detection.type === 'product_placement' ? '📦' :
                                detection.type === 'audio_mention' ? '🎤' : '🏷️')}
                           </span>
                           <div>
-                            <Text as="h4">{detection.brand}</Text>
-                            <Badge 
-                              variant={detection.sponsorship_category === 'ad_placement' ? 'default' : 'secondary'} 
+                            <p className="text-sm font-semibold text-foreground">{detection.brand}</p>
+                            <Badge
+                              variant={detection.sponsorship_category === 'ad_placement' ? 'default' : 'secondary'}
                               className="text-xs mt-1"
                             >
-                              {detection.sponsorship_category === 'ad_placement' ? '📺 Ad Placement' : '🏟️ In-Game'}
+                              {detection.sponsorship_category === 'ad_placement' ? 'Ad Placement' : 'In-Game'}
                             </Badge>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center space-x-2">
                           <Badge variant={
                             detection.sentiment_context === 'positive' ? 'default' :
@@ -432,47 +394,47 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ analysisData, i
                           }>
                             {detection.sentiment_context}
                           </Badge>
-                          
+
                           {detection.timeline && (
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-sm text-text-tertiary font-mono tabular-nums">
                               {Math.floor(detection.timeline[0] / 60)}:{(detection.timeline[0] % 60).toFixed(0).padStart(2, '0')}
                             </span>
                           )}
                         </div>
                       </div>
-                      
-                      <Text as="p" className="text-sm">{detection.description}</Text>
-                      
+
+                      <p className="text-sm text-foreground">{detection.description}</p>
+
                       <div className="mt-2 flex items-center text-xs">
                         <Badge variant="outline" className="mr-2">
                           {detection.type.replace('_', ' ')}
                         </Badge>
                         {detection.location && (
-                          <span className="text-muted-foreground">
+                          <span className="text-text-tertiary">
                             Position: {detection.location[0]}%, {detection.location[1]}%
                           </span>
                         )}
                       </div>
-                    </Card>
+                    </div>
                   ))}
-                  
+
                   {getFilteredDetections(getRawDetections()).length > 10 && (
-                    <div className="text-center py-4 text-muted-foreground">
+                    <div className="text-center py-4 text-text-secondary text-sm">
                       +{getFilteredDetections(getRawDetections()).length - 10} more {sponsorshipFilter === 'all' ? 'detections' : sponsorshipFilter === 'ad_placement' ? 'ad placements' : 'in-game placements'}
                     </div>
                   )}
-                  
+
                   {getFilteredDetections(getRawDetections()).length === 0 && sponsorshipFilter !== 'all' && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Target className="w-12 h-12 mx-auto text-muted mb-2" />
+                    <div className="text-center py-8 text-text-secondary">
+                      <Target className="w-12 h-12 mx-auto text-text-tertiary mb-2" />
                       <p>No {sponsorshipFilter === 'ad_placement' ? 'ad placements' : 'in-game placements'} found</p>
-                      <p className="text-sm">Try switching to a different category filter</p>
+                      <p className="text-sm text-text-tertiary">Try switching to a different category filter</p>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Target className="w-12 h-12 mx-auto text-muted mb-2" />
+                <div className="text-center py-8 text-text-secondary">
+                  <Target className="w-12 h-12 mx-auto text-text-tertiary mb-2" />
                   <p>No contextual data available</p>
                 </div>
               )}
@@ -482,20 +444,19 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ analysisData, i
           {activeTab === 'reach-awareness' && (
             <ReachAwarenessMetrics analysisData={analysisData} />
           )}
-          
+
           {activeTab === 'engagement' && (
             <EngagementMetrics analysisData={analysisData} />
           )}
-          
-          
+
           {activeTab === 'brand-performance' && (
             <BrandPerformance analysisData={analysisData} />
           )}
-          
+
           {activeTab === 'business-impact' && (
             <BusinessImpact analysisData={analysisData} />
           )}
-          
+
           {activeTab === 'content-quality' && (
             <ContentQuality analysisData={analysisData} />
           )}
@@ -504,7 +465,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ analysisData, i
             <SponsorshipIntelTab analysisData={analysisData} isMultiVideo={isMultiVideo} />
           )}
         </div>
-      </Card>
+      </div>
     </div>
   );
 };

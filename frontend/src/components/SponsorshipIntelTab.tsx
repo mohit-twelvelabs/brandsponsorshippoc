@@ -49,16 +49,16 @@ const fmtDur = (s: number) => {
   return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
 };
 
-// Tailwind classes for quality-tier coloring — kept light-themed.
+// Strand-token color helpers
 const legText = (v: number) =>
-  v >= 80 ? 'text-green-600' : v >= 70 ? 'text-lime-600' : v >= 60 ? 'text-amber-600' : 'text-red-600';
+  v >= 80 ? 'text-mb-green-dark' : v >= 70 ? 'text-mb-green-dark' : v >= 60 ? 'text-mb-orange-dark' : 'text-error';
 const legBg = (v: number) =>
-  v >= 80 ? 'bg-green-500' : v >= 70 ? 'bg-lime-500' : v >= 60 ? 'bg-amber-500' : 'bg-red-500';
+  v >= 80 ? 'bg-mb-green' : v >= 70 ? 'bg-mb-green' : v >= 60 ? 'bg-mb-orange' : 'bg-error';
 
 const confText = (c: string) =>
-  c === 'high' ? 'text-green-600' : c === 'medium' ? 'text-amber-600' : 'text-red-600';
+  c === 'high' ? 'text-mb-green-dark' : c === 'medium' ? 'text-mb-orange-dark' : 'text-error';
 const confDot = (c: string) =>
-  c === 'high' ? 'bg-green-500' : c === 'medium' ? 'bg-amber-500' : 'bg-red-500';
+  c === 'high' ? 'bg-mb-green' : c === 'medium' ? 'bg-mb-orange' : 'bg-error';
 
 const titleCase = (s: string) =>
   s.split('_').map(w => w[0]?.toUpperCase() + w.slice(1)).join(' ');
@@ -347,47 +347,64 @@ const SponsorshipIntelTab: React.FC<SponsorshipIntelTabProps> = ({ analysisData,
 
   const sortArrow = (k: keyof Impression) => (sortKey === k ? (sortAsc ? ' ↑' : ' ↓') : '');
 
+  // Derived values for Share of Voice bar (plain const — no hook needed)
+  const maxSponsorDur = sponsorAggs.reduce((m, a) => Math.max(m, a.totalDur), 1) || 1;
+
+  // Top 12 sponsors for the cards grid
+  const topSponsors = sponsorAggs.slice(0, 12);
+
   // ────────────────────────────────────────────
   // Render
   // ────────────────────────────────────────────
 
   return (
-    <div className="space-y-4">
-      {/* HEADER + KPIs */}
-      <div className="flex items-start justify-between flex-wrap gap-3 pb-4 border-b">
-        <div className="flex items-start gap-2">
-          <Zap className="w-5 h-5 text-orange-500 mt-0.5" />
-          <div>
-            <div className="text-base font-bold tracking-tight">Sponsorship Intelligence</div>
-            <div className="text-xs text-gray-500 mt-0.5">
-              {isMultiVideo ? 'Multi-video composite' : 'Single video analysis'}
-              <span className="mx-1.5">·</span>Duration {hhmmss(totalDuration)}
-              <span className="mx-1.5">·</span>Powered by TwelveLabs Marengo
-            </div>
-          </div>
+    <div className="space-y-12 lg:space-y-16">
+
+      {/* ── 1. HERO KPI BAND ── */}
+      <section>
+        {/* Masterbrand stripe */}
+        <div className="h-1 w-full rounded-full bg-gradient-to-r from-mb-green via-mb-orange to-mb-pink mb-8" />
+
+        <div className="mb-6">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-mb-green-dark mb-1">
+            LIVE INTEL
+          </p>
+          <h2 className="text-2xl font-bold tracking-tight text-foreground">
+            Sponsorship intelligence
+          </h2>
+          <p className="text-base text-text-secondary mt-1">
+            {isMultiVideo ? 'Multi-video composite' : 'Single video'}
+            {' · '}{hhmmss(totalDuration)}
+            {' · '}Powered by TwelveLabs Marengo
+          </p>
         </div>
-        <div className="flex gap-2 flex-wrap">
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { v: kpis.n, l: 'Impressions' },
             { v: `${Math.round(kpis.totalSec)}s`, l: 'Sponsor-Seconds' },
-            { v: kpis.uniq, l: 'Sponsors' },
-            { v: kpis.avgLeg, l: 'Avg Legibility' },
-            { v: `${kpis.adPct}%`, l: 'Ad-Placement %' },
-            { v: kpis.flagged, l: 'Flagged' },
+            { v: kpis.uniq, l: 'Brands' },
+            { v: kpis.avgLeg, l: 'Avg Quality' },
           ].map(k => (
-            <div key={k.l} className="rounded-md px-3 py-1.5 text-center bg-gray-50 border min-w-[78px]">
-              <div className={`text-lg font-bold leading-tight ${k.l === 'Flagged' && kpis.flagged > 0 ? 'text-red-500' : 'text-orange-500'}`}>{k.v}</div>
-              <div className="text-[9px] uppercase tracking-wider text-gray-500">{k.l}</div>
+            <div key={k.l} className="rounded-2xl border border-border bg-card p-5 flex flex-col gap-1">
+              <span className="text-3xl lg:text-4xl font-bold tracking-tight text-foreground tabular-nums">
+                {k.v}
+              </span>
+              <span className="text-xs font-bold uppercase tracking-[0.16em] text-text-secondary">
+                {k.l}
+              </span>
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* PLAYER + LIVE FEED */}
-      <div className="grid gap-3" style={{ gridTemplateColumns: 'minmax(0, 1fr) 280px' }}>
-        <div className="rounded-lg overflow-hidden border bg-black relative" style={{ minHeight: 260 }}>
+      {/* ── 2. PLAYER + LIVE FEED ── */}
+      <section className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-4">
+
+        {/* Player */}
+        <div className="rounded-2xl border border-border bg-brand-charcoal overflow-hidden relative" style={{ minHeight: 280 }}>
           {videoError ? (
-            <div className="flex items-center justify-center text-white/80 text-sm gap-2 py-20 px-6 text-center">
+            <div className="flex items-center justify-center text-brand-white/80 text-sm gap-2 py-20 px-6 text-center">
               <AlertCircle className="w-4 h-4" /> {videoError}
             </div>
           ) : (
@@ -398,46 +415,74 @@ const SponsorshipIntelTab: React.FC<SponsorshipIntelTabProps> = ({ analysisData,
                 controls={false}
                 onClick={togglePlay}
                 className="w-full block cursor-pointer"
-                style={{ height: 280, objectFit: 'contain', background: '#000' }}
+                style={{ height: 400, objectFit: 'contain', background: '#000' }}
               />
               {/* Custom controls overlay */}
-              <div className="absolute inset-x-0 bottom-0 px-3 pt-8 pb-2"
-                   style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0))' }}>
+              <div
+                className="absolute inset-x-0 bottom-0 px-3 pt-10 pb-3"
+                style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.90), rgba(0,0,0,0))' }}
+              >
                 {/* Scrubber */}
                 <div
                   onClick={scrubFromEvent}
                   className="relative w-full cursor-pointer group select-none"
-                  style={{ height: 18, paddingTop: 7, paddingBottom: 7 }}
+                  style={{ height: 20, paddingTop: 8, paddingBottom: 8 }}
                 >
-                  <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 rounded-full bg-white/25" />
+                  {/* Track background */}
+                  <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 rounded-full bg-brand-white/15" />
+                  {/* Buffered */}
                   {totalDuration > 0 && (
                     <div
-                      className="absolute left-0 top-1/2 -translate-y-1/2 h-1 rounded-full bg-white/40"
+                      className="absolute left-0 top-1/2 -translate-y-1/2 h-1 rounded-full bg-brand-white/30"
                       style={{ width: `${Math.min(100, (buffered / totalDuration) * 100)}%` }}
                     />
                   )}
+                  {/* Progress fill */}
                   {totalDuration > 0 && (
                     <div
-                      className="absolute left-0 top-1/2 -translate-y-1/2 h-1 rounded-full bg-orange-500"
+                      className="absolute left-0 top-1/2 -translate-y-1/2 h-1 rounded-full bg-mb-green"
                       style={{ width: `${Math.min(100, (currentTime / totalDuration) * 100)}%` }}
                     />
                   )}
+                  {/* Playhead dot */}
                   {totalDuration > 0 && (
                     <div
-                      className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-orange-500 ring-2 ring-white shadow opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-mb-green ring-2 ring-brand-white shadow opacity-0 group-hover:opacity-100 transition-opacity"
                       style={{ left: `calc(${Math.min(100, (currentTime / totalDuration) * 100)}% - 6px)` }}
                     />
                   )}
                 </div>
-                <div className="flex items-center justify-between gap-3 mt-1 text-white text-xs">
+
+                {/* Sponsor markers row — below scrubber */}
+                {totalDuration > 0 && impressions.length > 0 && (
+                  <div className="relative w-full" style={{ height: 6, marginTop: 3 }}>
+                    {impressions.map(i => (
+                      <div
+                        key={i.id}
+                        onClick={(e) => { e.stopPropagation(); seek(i.start); }}
+                        title={`${i.sponsor} · ${i.location} · ${hhmmss(i.start)}`}
+                        className={`absolute top-0 rounded-full cursor-pointer opacity-80 hover:opacity-100 transition-opacity ${confDot(i.confidence)}`}
+                        style={{
+                          left: `${(i.start / totalDuration) * 100}%`,
+                          width: `${Math.max(0.4, (i.duration / totalDuration) * 100)}%`,
+                          minWidth: 4,
+                          height: 6,
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Controls row */}
+                <div className="flex items-center justify-between gap-3 mt-2 text-brand-white">
                   <button
                     onClick={togglePlay}
-                    className="flex items-center justify-center w-7 h-7 rounded-full bg-white/15 hover:bg-white/25 transition-colors"
+                    className="flex items-center justify-center w-8 h-8 rounded-full bg-mb-green/15 hover:bg-mb-green/30 text-mb-green transition-colors"
                     aria-label={isPlaying ? 'Pause' : 'Play'}
                   >
                     {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
                   </button>
-                  <span className="font-mono tabular-nums text-[11px]">
+                  <span className="font-mono tabular-nums text-brand-white/80 text-sm">
                     {hhmmss(currentTime)} / {hhmmss(totalDuration)}
                   </span>
                 </div>
@@ -445,15 +490,21 @@ const SponsorshipIntelTab: React.FC<SponsorshipIntelTabProps> = ({ analysisData,
             </>
           )}
         </div>
+
         {/* Live Sponsor Feed sidebar */}
-        <div className="rounded-lg border bg-card flex flex-col" style={{ height: 280 }}>
-          <div className="flex justify-between items-center px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-gray-500 border-b">
-            <span className="flex items-center gap-1.5"><Zap className="w-3 h-3 text-orange-500" /> Live Sponsor Feed</span>
-            <span className="text-xs font-normal normal-case text-gray-700 font-mono tabular-nums">{hhmmss(currentTime)}</span>
+        <div className="rounded-2xl border border-border bg-card flex flex-col min-h-[280px] lg:h-[440px]">
+          <div className="flex justify-between items-center px-4 py-3 border-b border-border flex-shrink-0">
+            <span className="flex items-center gap-2">
+              <Zap className="w-3.5 h-3.5 text-mb-green" />
+              <span className="text-xs font-bold uppercase tracking-[0.18em] text-mb-green-dark">
+                Live Sponsor Feed
+              </span>
+            </span>
+            <span className="font-mono tabular-nums text-sm text-foreground">{hhmmss(currentTime)}</span>
           </div>
-          <div className="flex-1 overflow-y-auto sponsorship-feed-scroll p-1.5">
+          <div className="flex-1 overflow-y-auto sponsorship-feed-scroll p-2 min-h-0">
             {liveImpressions.length === 0 ? (
-              <div className="px-2 py-3 text-xs text-gray-400">
+              <div className="px-3 py-4 text-sm text-text-tertiary">
                 {videoUrl ? 'No tracked brands at this moment' : 'Loading video…'}
               </div>
             ) : (
@@ -461,18 +512,22 @@ const SponsorshipIntelTab: React.FC<SponsorshipIntelTabProps> = ({ analysisData,
                 <button
                   key={i.id}
                   onClick={() => seek(i.start)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded mb-0.5 hover:bg-accent/20 text-left transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-xl mb-1 hover:bg-mb-green-light/20 text-left transition-colors"
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-xs truncate">{i.sponsor}</div>
-                    <div className="text-[10px] text-gray-500 truncate">{i.location}</div>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <span className={`inline-block w-1.5 h-1.5 rounded-full ${confDot(i.confidence)}`} />
-                      <span className={`text-[9px] uppercase tracking-wider font-bold ${confText(i.confidence)}`}>{i.confidence}</span>
+                    <div className="font-semibold text-sm text-foreground truncate">{i.sponsor}</div>
+                    <div className="text-xs text-text-secondary truncate">{i.location}</div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className={`inline-block w-2 h-2 rounded-full ${confDot(i.confidence)}`} />
+                      <span className={`text-xs uppercase tracking-wider font-semibold ${confText(i.confidence)}`}>
+                        {i.confidence}
+                      </span>
                     </div>
                   </div>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold border-2 flex-shrink-0 ${legText(i.legibility)}`}
-                       style={{ borderColor: 'currentColor' }}>
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 flex-shrink-0 ${legText(i.legibility)}`}
+                    style={{ borderColor: 'currentColor' }}
+                  >
                     {i.legibility}
                   </div>
                 </button>
@@ -480,69 +535,11 @@ const SponsorshipIntelTab: React.FC<SponsorshipIntelTabProps> = ({ analysisData,
             )}
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* PER-SPONSOR TRACKS */}
-      <div className="rounded-lg border bg-card p-3">
-        <div className="flex justify-between items-center mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-500">
-          <span>Sponsor Impression Tracks — click any segment to jump</span>
-          <span className="text-[10px] font-normal normal-case text-gray-500 flex items-center gap-3">
-            <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-green-500" /> In-Game</span>
-            <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-amber-500" /> Ad</span>
-          </span>
-        </div>
-        <div className="space-y-1">
-          {sponsorAggs.map(agg => {
-            const tracks = impressions.filter(i => i.sponsor === agg.sponsor);
-            const isFiltered = filterSponsor === agg.sponsor;
-            return (
-              <div key={agg.sponsor} className="flex items-center" style={{ height: 22 }}>
-                <button
-                  onClick={() => setFilterSponsor(isFiltered ? null : agg.sponsor)}
-                  className={`text-[11px] text-left truncate pr-2 hover:underline ${isFiltered ? 'text-orange-500 font-semibold' : 'text-gray-700'}`}
-                  style={{ width: 150, flexShrink: 0 }}
-                  title={`Filter by ${agg.sponsor}`}
-                >{agg.sponsor}</button>
-                <div
-                  className="flex-1 relative rounded cursor-pointer bg-gray-100 border"
-                  style={{ height: 16 }}
-                  onClick={(e) => {
-                    const r = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-                    seek(((e.clientX - r.left) / r.width) * totalDuration);
-                  }}
-                >
-                  {tracks.map(t => {
-                    const x = (t.start / totalDuration) * 100;
-                    const w = Math.max((t.duration / totalDuration) * 100, 0.3);
-                    return (
-                      <div
-                        key={t.id}
-                        onClick={(e) => { e.stopPropagation(); seek(t.start); }}
-                        className={`absolute top-px h-3.5 rounded-sm cursor-pointer hover:brightness-125 ${t.isInGame ? 'bg-green-500' : 'bg-amber-500'}`}
-                        style={{ left: `${x}%`, width: `${w}%`, minWidth: 2 }}
-                        title={`${t.sponsor} · ${hhmmss(t.start)}–${hhmmss(t.end)} · ${t.ctx}`}
-                      />
-                    );
-                  })}
-                  {totalDuration > 0 && (
-                    <div
-                      className="absolute top-0 w-px h-full bg-orange-500/80 pointer-events-none"
-                      style={{ left: `${Math.min(100, (currentTime / totalDuration) * 100)}%` }}
-                    />
-                  )}
-                </div>
-              </div>
-            );
-          })}
-          {sponsorAggs.length === 0 && (
-            <div className="text-xs py-5 text-center text-gray-400">No tracked impressions yet.</div>
-          )}
-        </div>
-      </div>
-
-      {/* CONTROL BAR */}
-      <div className="rounded-lg border bg-card flex items-center gap-2 px-3 py-2 flex-wrap">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Context:</span>
+      {/* ── 3. CONTROL BAR ── */}
+      <div className="rounded-xl border border-border bg-card p-3 flex items-center gap-2 flex-wrap">
+        <span className="text-xs font-bold uppercase tracking-[0.18em] text-text-secondary">Context:</span>
         {([
           { key: 'all', label: 'All' },
           { key: 'in-game', label: 'In-Game' },
@@ -551,160 +548,236 @@ const SponsorshipIntelTab: React.FC<SponsorshipIntelTabProps> = ({ analysisData,
           <button
             key={b.key}
             onClick={() => setFilterCtx(b.key)}
-            className={`px-3 py-1 rounded-full text-xs border transition-colors ${
+            className={
               filterCtx === b.key
-                ? 'border-orange-500 bg-orange-50 text-orange-600'
-                : 'border-gray-300 bg-transparent text-gray-600 hover:bg-gray-50'
-            }`}
-          >{b.label}</button>
+                ? 'inline-flex items-center gap-1.5 px-4 py-2 rounded-full border-2 border-mb-green bg-mb-green-light/40 text-brand-charcoal text-sm font-semibold'
+                : 'inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-border bg-card text-foreground text-sm font-medium hover:border-mb-green-dark transition-colors'
+            }
+          >
+            {b.label}
+          </button>
         ))}
-        <div className="w-px h-4 bg-gray-300 mx-1" />
-        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Quality:</span>
+        <div className="w-px h-5 bg-border mx-1" />
         <button
           onClick={() => setFilterCtx(filterCtx === 'flagged' ? 'all' : 'flagged')}
-          className={`px-3 py-1 rounded-full text-xs border flex items-center gap-1 ${
+          className={
             filterCtx === 'flagged'
-              ? 'border-red-500 bg-red-50 text-red-600'
-              : 'border-gray-300 bg-transparent text-gray-600 hover:bg-gray-50'
-          }`}
-        ><AlertTriangle className="w-3 h-3" /> Flagged Only</button>
+              ? 'inline-flex items-center gap-1.5 px-4 py-2 rounded-full border-2 border-error bg-error-light text-error text-sm font-semibold'
+              : 'inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-border bg-card text-foreground text-sm font-medium hover:border-mb-green-dark transition-colors'
+          }
+        >
+          <AlertTriangle className="w-3.5 h-3.5" /> Flagged Only
+        </button>
         <div className="flex items-center gap-2 ml-auto">
           <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-tertiary" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search sponsor or placement…"
-              className="pl-7 pr-2 py-1 rounded text-xs border outline-none focus:border-orange-500 w-56 bg-card"
+              className="pl-9 pr-3 py-2 rounded-xl border border-border bg-card text-foreground placeholder:text-text-tertiary focus:outline-none focus:border-mb-green-dark focus:ring-2 focus:ring-mb-green/30 transition text-sm w-64"
             />
           </div>
           <button
             onClick={exportCsv}
-            className="px-2 py-1 rounded text-xs border bg-card text-gray-700 hover:bg-gray-50 flex items-center gap-1"
-          ><Download className="w-3 h-3" /> CSV</button>
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-transparent border border-border text-foreground font-semibold hover:bg-card transition-colors text-sm"
+          >
+            <Download className="w-3.5 h-3.5" /> CSV
+          </button>
         </div>
       </div>
 
-      {/* SPONSOR CARDS */}
-      <div className="rounded-lg border bg-card">
-        <div className="flex gap-2 overflow-x-auto sponsorship-cards-scroll p-3">
-          {sponsorAggs.map(agg => {
-            const isActive = filterSponsor === agg.sponsor;
-            return (
-              <button
-                key={agg.sponsor}
-                onClick={() => setFilterSponsor(isActive ? null : agg.sponsor)}
-                className={`rounded-lg px-3 py-2 min-w-[190px] flex-shrink-0 text-left transition-colors border ${
-                  isActive ? 'border-orange-500 bg-orange-50' : 'border-gray-200 bg-card hover:border-gray-300'
-                }`}
-              >
-                <div className="font-bold text-sm truncate" title={agg.sponsor}>{agg.sponsor}</div>
-                <div className="text-[10px] text-gray-500 mb-2 truncate">{agg.topPlacement}</div>
-                <div className="flex gap-3 mb-2">
-                  <div>
-                    <div className="text-base font-bold leading-none">{agg.count}</div>
-                    <div className="text-[9px] uppercase tracking-wider text-gray-500">Imps</div>
-                  </div>
-                  <div>
-                    <div className="text-base font-bold leading-none">{fmtDur(agg.totalDur)}</div>
-                    <div className="text-[9px] uppercase tracking-wider text-gray-500">On-Screen</div>
-                  </div>
-                  <div>
-                    <div className="text-base font-bold leading-none">{agg.inGamePct}%</div>
-                    <div className="text-[9px] uppercase tracking-wider text-gray-500">In-Game</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-1 rounded overflow-hidden bg-gray-200">
-                    <div className={`h-full ${legBg(agg.avgLeg)}`} style={{ width: `${agg.avgLeg}%` }} />
-                  </div>
-                  <span className={`text-xs font-bold ${legText(agg.avgLeg)}`}>{agg.avgLeg}</span>
-                </div>
-              </button>
-            );
-          })}
-          {sponsorAggs.length === 0 && (
-            <div className="text-xs py-3 text-gray-400">No sponsor data.</div>
-          )}
+      {/* ── 4. TOP SPONSORS GRID ── */}
+      <section>
+        <div className="mb-5">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-mb-green-dark mb-1">
+            TOP SPONSORS
+          </p>
+          <h2 className="text-2xl font-bold tracking-tight text-foreground">Brand performance</h2>
         </div>
-      </div>
 
-      {/* DETAILED TABLE */}
-      <div className="rounded-lg border bg-card overflow-hidden">
-        <div className="overflow-x-auto sponsorship-table-scroll">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50">
-              <tr>
-                {([
-                  { k: 'sponsor', l: 'Sponsor' },
-                  { k: 'location', l: 'Placement' },
-                  { k: 'start', l: 'Start' },
-                  { k: 'end', l: 'End' },
-                  { k: 'duration', l: 'Duration' },
-                  { k: 'ctx', l: 'Context' },
-                  { k: 'legibility', l: 'Legibility' },
-                  { k: 'confidenceRank', l: 'Confidence' },
-                ] as const).map(({ k, l }) => (
-                  <th
-                    key={k}
-                    onClick={() => doSort(k as keyof Impression)}
-                    className={`text-[10px] uppercase tracking-wider font-bold px-3 py-2 cursor-pointer select-none whitespace-nowrap border-b ${sortKey === k ? 'text-orange-500' : 'text-gray-500 hover:text-gray-700'}`}
-                  >{l}{sortArrow(k as keyof Impression)}</th>
-                ))}
-                <th className="text-[10px] uppercase tracking-wider font-bold px-3 py-2 text-gray-500 border-b">Flag</th>
-                <th className="border-b" />
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr><td colSpan={10} className="text-center py-7 text-xs text-gray-400">No impressions match this filter.</td></tr>
-              ) : (
-                filtered.map(i => {
-                  const inWindow = currentTime >= i.start && currentTime < i.end;
-                  return (
-                    <tr
-                      key={i.id}
-                      onClick={() => seek(i.start)}
-                      className={`cursor-pointer border-b last:border-b-0 transition-colors ${
-                        inWindow ? 'bg-orange-50' : !i.isInGame ? 'bg-amber-50/30' : 'bg-card'
-                      } hover:bg-gray-50`}
+        {topSponsors.length === 0 ? (
+          <p className="text-sm text-text-tertiary">No sponsor data.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {topSponsors.map(agg => {
+              const isActive = filterSponsor === agg.sponsor;
+              const sovPct = Math.round((agg.totalDur / maxSponsorDur) * 100);
+              return (
+                <button
+                  key={agg.sponsor}
+                  onClick={() => setFilterSponsor(isActive ? null : agg.sponsor)}
+                  className={`rounded-2xl border bg-card p-5 shadow-md text-left transition-colors ${
+                    isActive
+                      ? 'border-2 border-mb-green bg-mb-green-light/30'
+                      : 'border-border hover:border-mb-green-dark'
+                  }`}
+                >
+                  <div className="font-bold text-lg text-foreground truncate" title={agg.sponsor}>
+                    {agg.sponsor}
+                  </div>
+                  <div className="text-sm text-text-secondary mb-4 truncate">{agg.topPlacement}</div>
+
+                  <div className="flex gap-4 mb-4">
+                    <div>
+                      <div className="text-xl font-bold text-foreground tabular-nums leading-none">{agg.count}</div>
+                      <div className="text-xs font-bold uppercase tracking-[0.16em] text-text-secondary mt-0.5">Imps</div>
+                    </div>
+                    <div>
+                      <div className="text-xl font-bold text-foreground tabular-nums leading-none">{fmtDur(agg.totalDur)}</div>
+                      <div className="text-xs font-bold uppercase tracking-[0.16em] text-text-secondary mt-0.5">On-Screen</div>
+                    </div>
+                    <div>
+                      <div className="text-xl font-bold text-foreground tabular-nums leading-none">{agg.inGamePct}%</div>
+                      <div className="text-xs font-bold uppercase tracking-[0.16em] text-text-secondary mt-0.5">In-Game</div>
+                    </div>
+                  </div>
+
+                  {/* Share of Voice bar */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-1.5 rounded-full bg-border-light overflow-hidden">
+                      <div className="h-full bg-mb-green rounded-full" style={{ width: `${sovPct}%` }} />
+                    </div>
+                    <span className="text-xs tabular-nums text-text-secondary font-medium">{sovPct}%</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* ── 5. IMPRESSIONS TABLE ── */}
+      <section>
+        <div className="mb-5">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-mb-green-dark mb-1">
+            ALL IMPRESSIONS
+          </p>
+          <h2 className="text-2xl font-bold tracking-tight text-foreground">Every detection</h2>
+          <p className="text-base text-text-secondary mt-1">Sorted by confidence, then legibility</p>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card overflow-hidden">
+          <div className="overflow-x-auto sponsorship-table-scroll">
+            <table className="w-full text-left">
+              <thead>
+                <tr>
+                  {([
+                    { k: 'sponsor', l: 'Sponsor' },
+                    { k: 'location', l: 'Placement' },
+                    { k: 'start', l: 'Start' },
+                    { k: 'end', l: 'End' },
+                    { k: 'duration', l: 'Duration' },
+                    { k: 'ctx', l: 'Context' },
+                    { k: 'legibility', l: 'Legibility' },
+                    { k: 'confidenceRank', l: 'Confidence' },
+                  ] as const).map(({ k, l }) => (
+                    <th
+                      key={k}
+                      onClick={() => doSort(k as keyof Impression)}
+                      className={`px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] text-left border-b border-border cursor-pointer select-none whitespace-nowrap ${
+                        sortKey === k ? 'text-mb-green-dark' : 'text-text-secondary hover:text-foreground'
+                      }`}
                     >
-                      <td className="px-3 py-2 text-xs"><strong>{i.sponsor}</strong></td>
-                      <td className="px-3 py-2 text-xs text-gray-600">{i.location}</td>
-                      <td className="px-3 py-2 text-xs font-mono tabular-nums">{hhmmss(i.start)}</td>
-                      <td className="px-3 py-2 text-xs font-mono tabular-nums">{hhmmss(i.end)}</td>
-                      <td className="px-3 py-2 text-xs">{fmtDur(i.duration)}</td>
-                      <td className="px-3 py-2 text-xs">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${i.isInGame ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
-                          {i.ctx}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 text-xs">
-                        <span className={`font-bold ${legText(i.legibility)}`}>{i.legibility}</span>
-                      </td>
-                      <td className="px-3 py-2 text-xs">
-                        <span className={`inline-block w-2 h-2 rounded-full mr-1.5 align-middle ${confDot(i.confidence)}`} />
-                        <span className={`uppercase font-semibold ${confText(i.confidence)}`}>{i.confidence}</span>
-                      </td>
-                      <td className="px-3 py-2 text-xs">
-                        {i.flagged ? (
-                          <span title={i.flagReason || 'Flagged'} className="text-orange-500">⚠</span>
-                        ) : <span className="text-gray-300">—</span>}
-                      </td>
-                      <td className="px-3 py-2 text-xs">
-                        <button
-                          onClick={e => { e.stopPropagation(); seek(i.start); }}
-                          className="px-2 py-0.5 rounded text-[10px] border border-orange-200 bg-orange-50 text-orange-600 hover:bg-orange-100 inline-flex items-center gap-1"
-                        ><Play className="w-2.5 h-2.5" /> Jump</button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                      {l}{sortArrow(k as keyof Impression)}
+                    </th>
+                  ))}
+                  <th className="px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] text-text-secondary text-left border-b border-border">
+                    Flag
+                  </th>
+                  <th className="border-b border-border" />
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="text-center py-10 text-sm text-text-tertiary">
+                      No impressions match this filter.
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map(i => {
+                    const inWindow = currentTime >= i.start && currentTime < i.end;
+                    return (
+                      <tr
+                        key={i.id}
+                        onClick={() => seek(i.start)}
+                        className={`hover:bg-mb-green-light/20 transition-colors cursor-pointer ${
+                          inWindow ? 'bg-mb-green-light/30' : ''
+                        }`}
+                      >
+                        <td className="px-4 py-3 text-sm text-foreground border-b border-border-light">
+                          <strong>{i.sponsor}</strong>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-foreground border-b border-border-light">
+                          {i.location}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-foreground border-b border-border-light font-mono tabular-nums">
+                          {hhmmss(i.start)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-foreground border-b border-border-light font-mono tabular-nums">
+                          {hhmmss(i.end)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-foreground border-b border-border-light">
+                          {fmtDur(i.duration)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-foreground border-b border-border-light">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
+                            i.isInGame
+                              ? 'bg-mb-green-light text-mb-green-dark'
+                              : 'bg-mb-orange-light text-mb-orange-dark'
+                          }`}>
+                            {i.ctx}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-foreground border-b border-border-light">
+                          <span className="flex items-center gap-1.5">
+                            <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${legBg(i.legibility)}`} />
+                            <span className="text-foreground tabular-nums font-semibold">
+                              {i.legibility}
+                            </span>
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-foreground border-b border-border-light">
+                          <span className="flex items-center gap-1.5">
+                            <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${confDot(i.confidence)}`} />
+                            <span className={`uppercase font-semibold ${confText(i.confidence)}`}>
+                              {i.confidence}
+                            </span>
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-foreground border-b border-border-light">
+                          {i.flagged ? (
+                            <span title={i.flagReason || 'Flagged'} className="text-mb-orange-dark text-base">
+                              ⚠
+                            </span>
+                          ) : (
+                            <span className="text-text-tertiary">&mdash;</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-foreground border-b border-border-light">
+                          <button
+                            onClick={e => { e.stopPropagation(); seek(i.start); }}
+                            className="bg-mb-green-light text-mb-green-dark hover:bg-mb-green hover:text-brand-charcoal px-2 py-1 rounded-md text-xs font-semibold inline-flex items-center gap-1 transition-colors"
+                          >
+                            <Play className="w-2.5 h-2.5" /> Jump
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+          {/* Small footer stats */}
+          <div className="px-4 py-2.5 border-t border-border-light flex items-center gap-4 text-xs text-text-tertiary">
+            <span>Ad-Placement: <strong className="text-foreground">{kpis.adPct}%</strong></span>
+            <span>Flagged sponsors: <strong className={kpis.flagged > 0 ? 'text-error' : 'text-foreground'}>{kpis.flagged}</strong></span>
+          </div>
         </div>
-      </div>
+      </section>
+
     </div>
   );
 };

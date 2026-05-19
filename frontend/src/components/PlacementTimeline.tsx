@@ -1,10 +1,14 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import { BrandAppearance, PlacementMetrics } from '../types';
-import { Card } from './ui/Card';
-import { Text } from './ui/Text';
-import { Badge } from './ui/Badge';
 import { formatTime } from '../utils/formatters';
+
+// Strand hex values for chart fills — NOT used in classNames
+const MB_GREEN = '#60E21B';
+const MB_ORANGE = '#FABA17';
+const MB_GREEN_DARK = '#30710E';
+const MB_ORANGE_DARK = '#7D5D0C';
+const BORDER_LIGHT = 'rgba(0,0,0,0.08)';
 
 interface PlacementTimelineProps {
   brandAppearances: BrandAppearance[];
@@ -13,11 +17,11 @@ interface PlacementTimelineProps {
   containerId: string;
 }
 
-const PlacementTimeline: React.FC<PlacementTimelineProps> = ({ 
-  brandAppearances, 
+const PlacementTimeline: React.FC<PlacementTimelineProps> = ({
+  brandAppearances,
   placementMetrics,
   videoDuration,
-  containerId 
+  containerId
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -26,10 +30,10 @@ const PlacementTimeline: React.FC<PlacementTimelineProps> = ({
   // Function to get container dimensions
   const getContainerDimensions = useCallback(() => {
     if (!containerRef.current) return { width: 800, height: 200 };
-    
+
     const containerRect = containerRef.current.getBoundingClientRect();
     return {
-      width: Math.max(containerRect.width || 800, 400), // Minimum width of 400px
+      width: Math.max(containerRect.width || 800, 400),
       height: 200
     };
   }, []);
@@ -40,9 +44,7 @@ const PlacementTimeline: React.FC<PlacementTimelineProps> = ({
       setDimensions(getContainerDimensions());
     };
 
-    // Set initial dimensions
     handleResize();
-
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [getContainerDimensions]);
@@ -53,12 +55,10 @@ const PlacementTimeline: React.FC<PlacementTimelineProps> = ({
     // Clear previous chart
     d3.select(svgRef.current).selectAll('*').remove();
 
-    // Set dimensions with responsive width
-    const margin = { top: 40, right: 40, bottom: 60, left: 60 };
-    const width = dimensions.width - margin.left - margin.right - 32; // Account for card padding
+    const margin = { top: 40, right: 40, bottom: 60, left: 80 };
+    const width = dimensions.width - margin.left - margin.right - 32;
     const height = dimensions.height - margin.top - margin.bottom;
 
-    // Create SVG
     const svg = d3.select(svgRef.current)
       .attr('width', width + margin.left + margin.right)
       .attr('height', height + margin.top + margin.bottom);
@@ -66,7 +66,7 @@ const PlacementTimeline: React.FC<PlacementTimelineProps> = ({
     const g = svg.append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // Create scales
+    // Scales
     const xScale = d3.scaleLinear()
       .domain([0, videoDuration])
       .range([0, width]);
@@ -76,41 +76,66 @@ const PlacementTimeline: React.FC<PlacementTimelineProps> = ({
       .range([0, height])
       .padding(0.3);
 
-    // Add X axis
+    // X axis
     g.append('g')
       .attr('transform', `translate(0,${height})`)
-      .call(d3.axisBottom(xScale)
-        .tickFormat((d: d3.NumberValue) => {
-          const minutes = Math.floor(Number(d) / 60);
-          const seconds = Number(d) % 60;
-          return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        }));
+      .call(
+        d3.axisBottom(xScale)
+          .tickFormat((d: d3.NumberValue) => {
+            const minutes = Math.floor(Number(d) / 60);
+            const seconds = Number(d) % 60;
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+          })
+      )
+      .selectAll('text')
+      .style('font-size', '10px')
+      .style('font-family', 'ui-monospace, monospace')
+      .attr('fill', '#888');
 
-    // Add axis labels
+    g.select('.domain').attr('stroke', BORDER_LIGHT);
+    g.selectAll('.tick line').attr('stroke', BORDER_LIGHT);
+
+    // Axis label
     g.append('text')
-      .attr('transform', `translate(${width / 2}, ${height + 40})`)
+      .attr('transform', `translate(${width / 2}, ${height + 44})`)
       .style('text-anchor', 'middle')
-      .style('font-size', '12px')
+      .style('font-size', '10px')
+      .attr('fill', '#888')
       .text('Video Timeline');
 
-    // Add Y axis labels
+    // Y axis labels
     g.append('text')
-      .attr('x', -10)
+      .attr('x', -8)
       .attr('y', yScale('optimal')! + yScale.bandwidth() / 2)
+      .attr('dy', '0.35em')
       .style('text-anchor', 'end')
-      .style('font-size', '12px')
-      .style('fill', '#22c55e')
+      .style('font-size', '11px')
+      .style('font-weight', '600')
+      .attr('fill', MB_GREEN_DARK)
       .text('Optimal');
 
     g.append('text')
-      .attr('x', -10)
+      .attr('x', -8)
       .attr('y', yScale('suboptimal')! + yScale.bandwidth() / 2)
+      .attr('dy', '0.35em')
       .style('text-anchor', 'end')
-      .style('font-size', '12px')
-      .style('fill', '#f59e0b')
+      .style('font-size', '11px')
+      .style('font-weight', '600')
+      .attr('fill', MB_ORANGE_DARK)
       .text('Suboptimal');
 
-    // Process placement data
+    // Track backgrounds
+    ['optimal', 'suboptimal'].forEach(quality => {
+      g.append('rect')
+        .attr('x', 0)
+        .attr('y', yScale(quality)!)
+        .attr('width', width)
+        .attr('height', yScale.bandwidth())
+        .attr('fill', BORDER_LIGHT)
+        .attr('rx', 6);
+    });
+
+    // Placement data
     const placements = placementMetrics?.engagement_windows || brandAppearances.map(app => ({
       time_range: app.timeline,
       duration: app.timeline[1] - app.timeline[0],
@@ -119,109 +144,94 @@ const PlacementTimeline: React.FC<PlacementTimelineProps> = ({
       context: app.description
     }));
 
-    // Create tooltip
+    // Tooltip
     const tooltip = d3.select('body').append('div')
-      .attr('class', 'tooltip')
       .style('opacity', 0)
       .style('position', 'absolute')
-      .style('background', 'rgba(0, 0, 0, 0.8)')
-      .style('color', 'white')
-      .style('padding', '8px')
-      .style('border-radius', '4px')
+      .style('background', '#1a1a1a')
+      .style('color', '#ffffff')
+      .style('border-radius', '6px')
+      .style('padding', '6px 10px')
       .style('font-size', '12px')
-      .style('pointer-events', 'none');
+      .style('pointer-events', 'none')
+      .style('z-index', '9999');
 
-    // Define type for placement data
     type PlacementData = typeof placements[0];
 
-    // Draw placement bars
+    // Placement bars
     g.selectAll('.placement')
       .data(placements)
       .enter().append('rect')
       .attr('class', 'placement')
       .attr('x', (d: PlacementData) => xScale(d.time_range[0]))
       .attr('y', (d: PlacementData) => yScale(d.quality)!)
-      .attr('width', (d: PlacementData) => xScale(d.time_range[1]) - xScale(d.time_range[0]))
+      .attr('width', (d: PlacementData) => Math.max(xScale(d.time_range[1]) - xScale(d.time_range[0]), 2))
       .attr('height', yScale.bandwidth())
-      .attr('fill', (d: PlacementData) => d.quality === 'optimal' ? '#22c55e' : '#f59e0b')
-      .attr('fill-opacity', 0.7)
-      .attr('stroke', (d: PlacementData) => d.quality === 'optimal' ? '#16a34a' : '#d97706')
+      .attr('fill', (d: PlacementData) => d.quality === 'optimal' ? MB_GREEN : MB_ORANGE)
+      .attr('fill-opacity', 0.85)
+      .attr('stroke', (d: PlacementData) => d.quality === 'optimal' ? MB_GREEN_DARK : MB_ORANGE_DARK)
       .attr('stroke-width', 1)
+      .attr('rx', 4)
       .on('mouseover', (event: MouseEvent, d: PlacementData) => {
-        tooltip.transition().duration(200).style('opacity', .9);
-        tooltip.html(`
-          <strong>${d.type}</strong><br/>
-          Duration: ${d.duration}s<br/>
-          Quality: ${d.quality}<br/>
-          ${d.context ? `Context: ${d.context.substring(0, 50)}...` : ''}
-        `)
-          .style('left', (event.pageX + 10) + 'px')
-          .style('top', (event.pageY - 28) + 'px');
+        tooltip.transition().duration(200).style('opacity', 1);
+        tooltip.html(
+          `<strong>${d.type}</strong><br/>Duration: ${d.duration}s<br/>Quality: ${d.quality}${d.context ? `<br/>${d.context.substring(0, 50)}...` : ''}`
+        )
+          .style('left', (event.pageX + 12) + 'px')
+          .style('top', (event.pageY - 32) + 'px');
       })
       .on('mouseout', () => {
-        tooltip.transition().duration(500).style('opacity', 0);
+        tooltip.transition().duration(300).style('opacity', 0);
       });
 
-    // Add legend (positioned responsively)
+    // Legend
     const legend = svg.append('g')
-      .attr('transform', `translate(${Math.max(width - 120, 10)}, 10)`);
+      .attr('transform', `translate(${Math.max(width - 100, 10)}, 10)`);
 
-    legend.append('rect')
-      .attr('x', 0)
-      .attr('y', 0)
-      .attr('width', 15)
-      .attr('height', 15)
-      .attr('fill', '#22c55e')
-      .attr('fill-opacity', 0.7);
+    legend.append('rect').attr('x', 0).attr('y', 0).attr('width', 14).attr('height', 14)
+      .attr('fill', MB_GREEN).attr('rx', 3);
+    legend.append('text').attr('x', 18).attr('y', 11)
+      .style('font-size', '11px').attr('fill', '#444').text('Optimal');
 
-    legend.append('text')
-      .attr('x', 20)
-      .attr('y', 12)
-      .style('font-size', '12px')
-      .text('Optimal');
+    legend.append('rect').attr('x', 0).attr('y', 20).attr('width', 14).attr('height', 14)
+      .attr('fill', MB_ORANGE).attr('rx', 3);
+    legend.append('text').attr('x', 18).attr('y', 31)
+      .style('font-size', '11px').attr('fill', '#444').text('Suboptimal');
 
-    legend.append('rect')
-      .attr('x', 0)
-      .attr('y', 20)
-      .attr('width', 15)
-      .attr('height', 15)
-      .attr('fill', '#f59e0b')
-      .attr('fill-opacity', 0.7);
-
-    legend.append('text')
-      .attr('x', 20)
-      .attr('y', 32)
-      .style('font-size', '12px')
-      .text('Suboptimal');
-
-    // Cleanup
     return () => {
       tooltip.remove();
     };
   }, [brandAppearances, placementMetrics, videoDuration, dimensions]);
 
   return (
-    <Card className="p-4 w-full">
-      <div className="mb-4">
-        <Text as="h4" className="text-lg font-medium mb-2">Placement Timeline Analysis</Text>
-        <div className="flex gap-4 text-sm">
-          <Badge variant="outline" className="bg-green-50">
-            <span className="w-2 h-2 bg-green-500 rounded-full mr-1 inline-block"></span>
-            Optimal Placements: {placementMetrics?.optimal_placements || 0}
-          </Badge>
-          <Badge variant="outline" className="bg-yellow-50">
-            <span className="w-2 h-2 bg-yellow-500 rounded-full mr-1 inline-block"></span>
-            Suboptimal: {placementMetrics?.suboptimal_placements || 0}
-          </Badge>
-          <Badge variant="outline">
-            Screen Time: {formatTime(placementMetrics?.visibility_metrics?.total_screen_time || 0)}
-          </Badge>
+    <div className="rounded-2xl border border-border bg-card p-6 lg:p-8 shadow-md">
+      {/* Header */}
+      <div className="mb-5">
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-mb-green-dark mb-1">TIMELINE</p>
+        <h2 className="text-2xl font-bold tracking-tight text-foreground">Placement Timeline</h2>
+        <p className="text-base text-text-secondary mt-1">Brand placement quality over video duration</p>
+      </div>
+
+      {/* Legend chips */}
+      <div className="flex flex-wrap gap-3 mb-5">
+        <div className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-border bg-card text-foreground text-sm font-medium">
+          <span className="inline-block w-2 h-2 rounded-full bg-mb-green"></span>
+          Optimal Placements: {placementMetrics?.optimal_placements || 0}
+        </div>
+        <div className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-border bg-card text-foreground text-sm font-medium">
+          <span className="inline-block w-2 h-2 rounded-full bg-mb-orange"></span>
+          Suboptimal: {placementMetrics?.suboptimal_placements || 0}
+        </div>
+        <div className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-border bg-card text-foreground text-sm font-medium">
+          Screen Time: {formatTime(placementMetrics?.visibility_metrics?.total_screen_time || 0)}
         </div>
       </div>
-      <div ref={containerRef} className="w-full">
+
+      {/* Chart */}
+      <div ref={containerRef} className="w-full overflow-x-auto">
         <svg ref={svgRef} id={containerId} className="w-full"></svg>
       </div>
-    </Card>
+    </div>
   );
 };
 

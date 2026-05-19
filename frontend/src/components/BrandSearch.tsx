@@ -1,10 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { Search, X, Plus, Building2, CheckCircle2 } from 'lucide-react';
-import { Card } from './ui/Card';
-import { Button } from './ui/Button';
-import { Badge } from './ui/Badge';
-import { Text } from './ui/Text';
-import { Input } from './ui/Input';
+import { Search, X, Plus, CheckCircle2 } from 'lucide-react';
 import { useAccounts } from '../lib/AccountContext';
 import { getRecentBrands } from '../lib/accountStorage';
 
@@ -20,16 +15,16 @@ interface BrandSuggestion {
   category: string;
 }
 
-const BrandSearch: React.FC<BrandSearchProps> = ({ 
-  onBrandsSelect, 
-  onNext, 
-  isLoading = false 
+const BrandSearch: React.FC<BrandSearchProps> = ({
+  onBrandsSelect,
+  onNext,
+  isLoading = false
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [suggestions, setSuggestions] = useState<BrandSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [inputFocused, setInputFocused] = useState(false);
+  const [_inputFocused, setInputFocused] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteText, setPasteText] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -91,9 +86,9 @@ const BrandSearch: React.FC<BrandSearchProps> = ({
     if (!query.trim()) {
       return popularBrands.slice(0, 8); // Show popular brands when no query
     }
-    
+
     const lowercaseQuery = query.toLowerCase();
-    return popularBrands.filter(brand => 
+    return popularBrands.filter(brand =>
       brand.name.toLowerCase().includes(lowercaseQuery) ||
       brand.description.toLowerCase().includes(lowercaseQuery) ||
       brand.category.toLowerCase().includes(lowercaseQuery)
@@ -103,12 +98,12 @@ const BrandSearch: React.FC<BrandSearchProps> = ({
   // Handle search input change with debouncing
   const handleSearchChange = useCallback((value: string) => {
     setSearchQuery(value);
-    
+
     // Clear existing timeout
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
-    
+
     // Debounce the search
     searchTimeoutRef.current = setTimeout(() => {
       const filteredSuggestions = filterSuggestions(value);
@@ -192,121 +187,120 @@ const BrandSearch: React.FC<BrandSearchProps> = ({
   }, []);
 
   return (
-    <Card className="w-full p-6">
-      <Card.Header className="p-0 mb-6">
-        <Card.Title className="flex items-center">
-          <Building2 className="w-6 h-6 mr-2 text-black" />
-          Select Brands to Analyze
-        </Card.Title>
-        <Text as="p" className="text-black mt-2">
-          Search for and select the specific brands you want to analyze for sponsorship ROI in your video.
-        </Text>
-      </Card.Header>
+    <div className="rounded-2xl border border-border bg-card p-6 lg:p-8 shadow-md w-full">
+      {/* Header */}
+      <div className="mb-8">
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-mb-green-dark mb-3">
+          STEP 2 · BRANDS
+        </p>
+        <h1 className="text-4xl lg:text-5xl font-bold tracking-tight text-foreground leading-[1.05] mb-3">
+          Which brands are you tracking?
+        </h1>
+        <p className="text-base lg:text-lg text-text-secondary max-w-2xl">
+          Add brands one at a time, paste a list, or replay a recent set.
+        </p>
+      </div>
 
+      {/* Recent brand sets */}
       {recent.length > 0 && selectedBrands.length === 0 && (
-        <div className="mb-4 p-3 border rounded-lg bg-accent/5">
-          <div className="flex items-center justify-between mb-2">
-            <Text as="p" className="text-xs font-medium text-black/70">
-              Recently analyzed in this account
-            </Text>
-            <Button
-              variant="outline"
-              size="sm"
+        <div className="mb-6 space-y-2">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-text-secondary mb-3">
+            Recent brand sets
+          </p>
+          <div className="rounded-xl border border-border bg-card p-3 flex items-center justify-between gap-4">
+            <p className="text-sm text-text-secondary truncate flex-1">
+              {recent.join(', ')}
+            </p>
+            <button
+              type="button"
               onClick={() => {
                 setSelectedBrands(recent);
                 onBrandsSelect(recent);
               }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-border bg-card text-foreground text-sm font-medium hover:border-mb-green-dark transition-colors flex-shrink-0"
             >
-              Use this set ({recent.length})
-            </Button>
-          </div>
-          <div className="flex flex-wrap gap-1">
-            {recent.map(b => (
-              <span key={b} className="text-xs px-2 py-0.5 bg-white border rounded">
-                {b}
-              </span>
-            ))}
+              Replay
+            </button>
           </div>
         </div>
       )}
 
-      {/* Search Input */}
+      {/* Search input row */}
       <div className="relative mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-black z-10" />
-          <Input
-            ref={searchInputRef}
-            type="text"
-            value={searchQuery}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            onFocus={handleInputFocus}
-            onBlur={handleInputBlur}
-            onKeyDown={handleKeyPress}
-            placeholder="Search for brands (e.g., Nike, Ford, Coca-Cola)..."
-            className="pl-10 pr-12"
-            disabled={isLoading}
-          />
-          {searchQuery && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setSearchQuery('');
-                setShowSuggestions(false);
-                searchInputRef.current?.focus();
-              }}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 h-6 w-6 z-10"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          )}
+        <div className="flex gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary pointer-events-none" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
+              onKeyDown={handleKeyPress}
+              placeholder="Search for brands (e.g., Nike, Ford, Coca-Cola)..."
+              disabled={isLoading}
+              className="w-full pl-10 pr-10 py-3 rounded-xl border border-border bg-card text-foreground text-base placeholder:text-text-tertiary focus:outline-none focus:border-mb-green-dark focus:ring-2 focus:ring-mb-green/30 transition disabled:opacity-50"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setShowSuggestions(false);
+                  searchInputRef.current?.focus();
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-text-tertiary hover:text-foreground hover:bg-card transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Add Brand button */}
+          <button
+            type="button"
+            onClick={handleAddCustomBrand}
+            disabled={!searchQuery.trim() || isLoading}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-mb-green text-brand-charcoal font-semibold hover:bg-mb-green-dark hover:text-brand-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Plus className="w-4 h-4" />
+            Add Brand
+          </button>
         </div>
 
-        {/* Add Custom Brand Button */}
-        {searchQuery.trim() && !suggestions.some(s => s.name.toLowerCase() === searchQuery.toLowerCase()) && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleAddCustomBrand}
-            className="mt-2 text-xs"
-            disabled={isLoading}
-          >
-            <Plus className="w-3 h-3 mr-1" />
-            Add "{searchQuery.trim()}" as custom brand
-          </Button>
-        )}
-
-        {/* Suggestions Dropdown */}
+        {/* Suggestions dropdown */}
         {showSuggestions && suggestions.length > 0 && (
-          <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+          <div className="absolute z-10 left-0 right-0 mt-1 rounded-xl border border-border bg-card shadow-md max-h-60 overflow-y-auto">
             {suggestions.map((suggestion, index) => (
               <button
                 key={`${suggestion.name}-${index}`}
+                type="button"
                 onClick={() => handleBrandSelect(suggestion.name)}
                 disabled={selectedBrands.includes(suggestion.name) || isLoading}
-                className={`w-full text-left px-4 py-3 hover:bg-accent transition-colors border-b border-border last:border-b-0 ${
-                  selectedBrands.includes(suggestion.name) 
-                    ? 'bg-accent/50 opacity-60 cursor-not-allowed' 
+                className={`w-full text-left px-4 py-3 hover:bg-accent/20 transition-colors border-b border-border-light last:border-b-0 ${
+                  selectedBrands.includes(suggestion.name)
+                    ? 'opacity-50 cursor-not-allowed'
                     : 'cursor-pointer'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center">
-                      <Text as="p" className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-foreground">
                         {suggestion.name}
-                      </Text>
+                      </span>
                       {selectedBrands.includes(suggestion.name) && (
-                        <CheckCircle2 className="w-4 h-4 ml-2 text-black" />
+                        <CheckCircle2 className="w-4 h-4 text-mb-green-dark" />
                       )}
                     </div>
-                    <Text as="p" className="text-xs text-black mt-1">
+                    <span className="text-xs text-text-secondary">
                       {suggestion.description}
-                    </Text>
+                    </span>
                   </div>
-                  <Badge variant="secondary" className="text-xs ml-2">
+                  <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-border bg-card text-foreground text-sm font-medium ml-3">
                     {suggestion.category}
-                  </Badge>
+                  </span>
                 </div>
               </button>
             ))}
@@ -314,96 +308,103 @@ const BrandSearch: React.FC<BrandSearchProps> = ({
         )}
       </div>
 
-      {/* Selected Brands + toolbar (always visible — paste list works on empty state) */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <Text as="h3" className="text-sm font-medium">
+      {/* Selected brands + toolbar */}
+      <div className="mb-8 space-y-4">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-semibold text-foreground">
             Selected Brands ({selectedBrands.length})
-          </Text>
-          <div className="flex items-center gap-2">
+          </span>
+          <div className="flex items-center gap-1">
             {!pasteOpen && (
-              <Button
-                variant="outline"
-                size="sm"
+              <button
+                type="button"
                 onClick={() => setPasteOpen(true)}
                 disabled={isLoading}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-text-secondary hover:text-foreground hover:bg-card transition-colors text-sm font-medium disabled:opacity-50"
               >
                 Paste list
-              </Button>
+              </button>
             )}
-            <Button
-              variant="outline"
-              size="sm"
+            <button
+              type="button"
               onClick={() => { setSelectedBrands([]); onBrandsSelect([]); }}
               disabled={isLoading || selectedBrands.length === 0}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-text-secondary hover:text-foreground hover:bg-card transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Clear all
-            </Button>
+            </button>
           </div>
         </div>
 
+        {/* Paste panel */}
         {pasteOpen && (
-          <div className="mb-3 p-3 border rounded-lg">
+          <div className="rounded-xl border border-border bg-card p-4 space-y-3">
             <textarea
-              className="w-full p-2 border rounded text-sm font-mono"
+              className="w-full px-4 py-3 rounded-xl border border-border bg-card text-foreground placeholder:text-text-tertiary focus:outline-none focus:border-mb-green-dark focus:ring-2 focus:ring-mb-green/30 transition text-sm font-mono"
               rows={3}
               value={pasteText}
               onChange={(e) => setPasteText(e.target.value)}
-              placeholder="Nike, Adidas&#10;Ford&#10;Coca-Cola"
+              placeholder={"Nike, Adidas\nFord\nCoca-Cola"}
             />
-            <div className="flex justify-end mt-2 space-x-2">
-              <Button variant="outline" size="sm" onClick={() => { setPasteText(''); setPasteOpen(false); }}>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => { setPasteText(''); setPasteOpen(false); }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-text-secondary hover:text-foreground hover:bg-card transition-colors text-sm font-medium"
+              >
                 Cancel
-              </Button>
-              <Button size="sm" onClick={handlePasteAdd}>
+              </button>
+              <button
+                type="button"
+                onClick={handlePasteAdd}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-mb-green text-brand-charcoal font-semibold hover:bg-mb-green-dark hover:text-brand-white transition-colors"
+              >
                 Add
-              </Button>
+              </button>
             </div>
           </div>
         )}
 
-        {selectedBrands.length > 0 && (
+        {/* Selected brand chips */}
+        {selectedBrands.length > 0 ? (
           <div className="flex flex-wrap gap-2">
             {selectedBrands.map((brand) => (
-              <Badge
+              <span
                 key={brand}
-                variant="default"
-                className="px-3 py-1.5 text-sm flex items-center"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border-2 border-mb-green bg-mb-green-light/40 text-brand-charcoal text-sm font-semibold"
               >
                 {brand}
-                <Button
-                  variant="outline"
-                  size="sm"
+                <button
+                  type="button"
                   onClick={() => handleBrandRemove(brand)}
-                  className="ml-2 p-0 h-4 w-4 hover:bg-destructive/20"
                   disabled={isLoading}
+                  aria-label={`Remove ${brand}`}
+                  className="ml-0.5 rounded-full hover:bg-mb-green/30 transition-colors disabled:opacity-50"
                 >
-                  <X className="w-3 h-3" />
-                </Button>
-              </Badge>
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </span>
             ))}
           </div>
+        ) : (
+          <p className="text-sm text-text-tertiary">
+            No brands selected yet. Search above or paste a list.
+          </p>
         )}
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex justify-between items-center">
-        <Text as="p" className="text-sm text-black">
-          {selectedBrands.length === 0 
-            ? 'Select at least one brand to continue' 
-            : `${selectedBrands.length} brand${selectedBrands.length > 1 ? 's' : ''} selected`
-          }
-        </Text>
-        
-        <Button
+      {/* Continue CTA */}
+      <div className="flex justify-end">
+        <button
+          type="button"
           onClick={onNext}
           disabled={selectedBrands.length === 0 || isLoading}
-          className="px-6"
+          className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-mb-green text-brand-charcoal text-base font-semibold hover:bg-mb-green-dark hover:text-brand-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? 'Loading...' : 'Continue to Video Selection'}
-        </Button>
+        </button>
       </div>
-    </Card>
+    </div>
   );
 };
 

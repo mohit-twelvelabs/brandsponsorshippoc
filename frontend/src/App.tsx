@@ -174,90 +174,104 @@ function App() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header — TwelveLabs masterbrand gradient (green → orange → pink) */}
-      <header className="border-b border-brand-charcoal/10 sticky top-0 z-40 shadow-sm"
-              style={{ background: 'linear-gradient(90deg, #60E21B 0%, #FABA17 50%, #FFB0CD 100%)' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center gap-4">
-              <TwelveLabsWordmark className="h-5 w-auto text-brand-charcoal" aria-label="TwelveLabs" />
-              <div className="hidden sm:block w-px h-8 bg-brand-charcoal/20" />
-              <div>
-                <Text as="h1" className="text-xl text-brand-charcoal font-bold leading-tight">Brand ROI Analytics</Text>
-                <Text as="p" className="text-xs text-brand-charcoal/70 leading-tight">Sponsorship intelligence powered by Marengo</Text>
+      <header className="sticky top-0 z-40">
+        <div className="border-b border-brand-charcoal/10"
+             style={{ background: 'linear-gradient(90deg, #60E21B 0%, #FABA17 50%, #FFB0CD 100%)' }}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-4">
+              <div className="flex items-center gap-4">
+                <TwelveLabsWordmark className="h-5 w-auto text-brand-charcoal" aria-label="TwelveLabs" />
+                <div className="hidden sm:block w-px h-8 bg-brand-charcoal/20" />
+                <div>
+                  <Text as="h1" className="text-xl font-bold tracking-tight text-brand-charcoal leading-tight">Brand ROI Analytics</Text>
+                  <Text as="p" className="text-xs text-brand-charcoal/70 leading-tight">Sponsorship intelligence powered by Marengo</Text>
+                </div>
               </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              {activeAccount && currentStep !== 'connect' && (
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep('connect')}
-                  className="flex items-center text-xs bg-brand-charcoal/10 hover:bg-brand-charcoal/20 text-brand-charcoal px-3 py-1.5 rounded-full font-medium"
-                  title="Switch account or index"
-                >
-                  <Plug className="w-3 h-3 mr-1" />
-                  <span className="font-medium mr-1">{activeAccount.nickname}</span>
-                  <span className="opacity-80">· {activeAccount.indexName}</span>
-                  <span className="ml-2 underline">switch</span>
-                </button>
-              )}
 
-              {currentStep !== 'brand-search' && currentStep !== 'connect' && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleGoBack}
-                  className="flex items-center bg-brand-charcoal text-brand-white hover:bg-brand-charcoal/85 border-brand-charcoal"
-                  disabled={analysisLoading}
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back
-                </Button>
-              )}
+              <div className="flex items-center space-x-4">
+                {activeAccount && currentStep !== 'connect' && (
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep('connect')}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-border bg-brand-charcoal/10 text-brand-charcoal text-sm font-medium hover:border-mb-green-dark transition-colors"
+                    title="Switch account or index"
+                  >
+                    <Plug className="w-3 h-3" />
+                    <span className="font-medium">{activeAccount.nickname}</span>
+                    <span className="opacity-70">· {activeAccount.indexName}</span>
+                    <span className="ml-1 underline text-xs">switch</span>
+                  </button>
+                )}
 
-              {currentStep === 'results' && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleStartNew}
-                  className="flex items-center"
-                >
-                  Start New Analysis
-                </Button>
-              )}
+                {currentStep !== 'brand-search' && currentStep !== 'connect' && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleGoBack}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-full bg-transparent border border-border text-foreground font-semibold hover:bg-card transition-colors"
+                    disabled={analysisLoading}
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back
+                  </Button>
+                )}
+
+                {currentStep === 'results' && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleStartNew}
+                    className="flex items-center"
+                  >
+                    Start New Analysis
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
+        <div className="mb-stripe" />
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Step Indicator */}
-        <div className="flex justify-center mb-8">
-          <div className="flex items-center space-x-4">
-            {['connect', 'brand-search', 'video-selection', 'analysis', 'results'].map((step, index) => {
-              const currentIdx = ['connect', 'brand-search', 'video-selection', 'analysis', 'results'].indexOf(currentStep);
-              const isActive = currentStep === step;
-              const isComplete = index < currentIdx;
-              return (
-                <div key={step} className="flex items-center">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                    isActive
-                      ? 'bg-mb-green text-brand-charcoal ring-2 ring-mb-green/30'
-                      : isComplete
-                        ? 'bg-mb-green-dark text-brand-white'
-                        : 'bg-gray-200 text-gray-500'
-                  }`}>
-                    {index + 1}
-                  </div>
-                  {index < 4 && (
-                    <div className={`w-8 h-0.5 mx-2 ${isComplete ? 'bg-mb-green-dark' : 'bg-gray-200'}`} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+        {/* Step Indicator — labelled segmented control */}
+        {(() => {
+          const steps: { key: AppStep; label: string }[] = [
+            { key: 'connect',         label: 'CONNECT' },
+            { key: 'brand-search',    label: 'BRANDS'  },
+            { key: 'video-selection', label: 'VIDEOS'  },
+            { key: 'analysis',        label: 'ANALYZE' },
+            { key: 'results',         label: 'INSIGHTS'},
+          ];
+          const currentIdx = steps.findIndex(s => s.key === currentStep);
+          return (
+            <div className="flex justify-center mb-12">
+              <div className="flex items-center">
+                {steps.map((step, index) => {
+                  const isActive   = currentStep === step.key;
+                  const isComplete = index < currentIdx;
+                  return (
+                    <React.Fragment key={step.key}>
+                      <span className={
+                        isActive
+                          ? 'px-4 py-1.5 rounded-full text-sm font-semibold bg-foreground text-brand-white transition-colors'
+                          : isComplete
+                            ? 'px-4 py-1.5 rounded-full text-sm font-medium text-mb-green-dark transition-colors'
+                            : 'px-4 py-1.5 rounded-full text-sm font-medium text-text-tertiary transition-colors'
+                      }>
+                        {step.label}
+                      </span>
+                      {index < steps.length - 1 && (
+                        <div className={`w-6 h-px mx-0.5 ${isComplete ? 'bg-mb-green-dark' : 'bg-border'}`} />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Step Content */}
         <div className="mb-8">

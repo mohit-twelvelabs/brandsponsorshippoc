@@ -1,22 +1,15 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Play, Clock, Calendar, AlertCircle } from 'lucide-react';
+import { Film, Check, AlertCircle } from 'lucide-react';
 import { VideoSelectorProps, Video } from '../types';
 import ApiService from '../services/api';
 import { formatTime } from '../utils/formatters';
-import { Card } from './ui/Card';
-import { Button } from './ui/Button';
-import { Badge } from './ui/Badge';
-import { Alert } from './ui/Alert';
-import { Loader } from './ui/Loader';
-import { Text } from './ui/Text';
-import VideoPreview from './VideoPreview';
 
-const VideoSelector: React.FC<VideoSelectorProps> = ({ 
-  onVideoSelect, 
-  onVideosSelect, 
+const VideoSelector: React.FC<VideoSelectorProps> = ({
+  onVideoSelect,
+  onVideosSelect,
   onStartSingleAnalysis,
-  onError, 
-  isAnalyzing = false, 
+  onError,
+  isAnalyzing = false,
   selectedBrands,
   multiSelect = false,
   selectedVideoIds = []
@@ -46,13 +39,13 @@ const VideoSelector: React.FC<VideoSelectorProps> = ({
         setLoading(true);
         setError(null);
         const response = await ApiService.getVideos();
-        
+
         if (ApiService.isApiError(response)) {
           throw new Error(response.error);
         }
-        
+
         setVideos(response.videos);
-        
+
         if (response.videos.length === 0 && response.message) {
           setError(response.message);
         }
@@ -71,7 +64,7 @@ const VideoSelector: React.FC<VideoSelectorProps> = ({
     if (!isAnalyzing) {
       fetchVideos();
     }
-    
+
     // Cleanup timeout on unmount
     return () => {
       if (fetchTimeoutRef.current) {
@@ -90,7 +83,7 @@ const VideoSelector: React.FC<VideoSelectorProps> = ({
       const newSelectedVideos = selectedVideos.includes(video.id)
         ? selectedVideos.filter(id => id !== video.id)
         : [...selectedVideos, video.id];
-      
+
       setSelectedVideos(newSelectedVideos);
       onVideosSelect?.(newSelectedVideos);
     } else {
@@ -126,246 +119,245 @@ const VideoSelector: React.FC<VideoSelectorProps> = ({
     const selectedInOrder = selectedVideos
       .map(id => videos.find(v => v.id === id))
       .filter(Boolean) as Video[];
-    
+
     const unselected = videos.filter(v => !selectedVideos.includes(v.id));
-    
+
     return [...selectedInOrder, ...unselected];
   };
 
+  // Loading state
   if (loading) {
     return (
-      <Card className="w-full p-6">
-        <Card.Header className="p-0 mb-4">
-          <Card.Title className="flex items-center">
-            <Play className="w-6 h-6 mr-2 text-primary" />
-            Select Video for Analysis
-          </Card.Title>
-        </Card.Header>
-        
-        <div className="flex items-center justify-center py-12">
-          <Loader size="lg" count={3} className="mr-3 text-primary" />
-          <span className="text-muted-foreground">Loading videos from TwelveLabs index...</span>
+      <div className="w-full space-y-8">
+        {/* Header skeleton */}
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-mb-green-dark mb-3">
+            STEP 3 · VIDEOS
+          </p>
+          <div className="h-12 w-80 bg-gray-100 rounded-xl animate-pulse mb-3" />
+          <div className="h-5 w-40 bg-gray-100 rounded-lg animate-pulse" />
         </div>
-      </Card>
+        {/* Skeleton grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="rounded-2xl border border-border bg-card overflow-hidden">
+              <div className="aspect-video bg-gray-100 animate-pulse" />
+              <div className="p-4 space-y-2">
+                <div className="h-4 bg-gray-100 rounded animate-pulse" />
+                <div className="h-3 w-2/3 bg-gray-100 rounded animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     );
   }
 
-  if (error) {
-  return (
-      <Card className="w-full p-6">
-        <Card.Header className="p-0 mb-4">
-          <Card.Title className="flex items-center">
-            <Play className="w-6 h-6 mr-2 text-primary" />
-            Select Video for Analysis
-          </Card.Title>
-        </Card.Header>
-        
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
-            <Text as="h3" className="mb-2">Unable to Load Videos</Text>
-            <Text as="p" className="text-muted-foreground mb-4">{error}</Text>
-            <Button onClick={fetchVideos} variant="default" disabled={isAnalyzing}>
-              {isAnalyzing ? 'Analysis in progress...' : 'Retry'}
-            </Button>
-          </div>
+  // Error state
+  if (error && videos.length === 0) {
+    return (
+      <div className="w-full space-y-8">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-mb-green-dark mb-3">
+            STEP 3 · VIDEOS
+          </p>
+          <h1 className="text-4xl lg:text-5xl font-bold tracking-tight text-foreground leading-[1.05]">
+            {multiSelect ? 'Choose videos to analyze.' : 'Choose a video to analyze.'}
+          </h1>
         </div>
-      </Card>
+        <div className="rounded-2xl border border-border bg-card p-8 flex flex-col items-center justify-center text-center gap-4">
+          <AlertCircle className="w-12 h-12 text-error" />
+          <h2 className="text-2xl font-bold tracking-tight text-error">
+            Could not load videos
+          </h2>
+          <p className="text-base text-text-secondary max-w-md">{error}</p>
+          <button
+            type="button"
+            onClick={fetchVideos}
+            disabled={isAnalyzing}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-text-secondary hover:text-foreground hover:bg-card transition-colors text-sm font-medium border border-border disabled:opacity-50"
+          >
+            {isAnalyzing ? 'Analysis in progress...' : 'Retry'}
+          </button>
+        </div>
+      </div>
     );
   }
 
+  // Empty state
   if (videos.length === 0) {
     return (
-      <Card className="w-full p-6">
-        <Card.Header className="p-0 mb-4">
-          <Card.Title className="flex items-center">
-            <Play className="w-6 h-6 mr-2 text-primary" />
-            Select Video for Analysis
-          </Card.Title>
-        </Card.Header>
-        
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="text-4xl mb-4">📹</div>
-            <Text as="h3" className="mb-2">No Videos Found</Text>
-            <Text as="p" className="text-muted-foreground mb-4">
-              No videos were found in your TwelveLabs index. Please upload some videos to the index first.
-            </Text>
-            <Button onClick={fetchVideos} variant="default" disabled={isAnalyzing}>
-              {isAnalyzing ? 'Analysis in progress...' : 'Refresh'}
-            </Button>
-          </div>
+      <div className="w-full space-y-8">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-mb-green-dark mb-3">
+            STEP 3 · VIDEOS
+          </p>
+          <h1 className="text-4xl lg:text-5xl font-bold tracking-tight text-foreground leading-[1.05]">
+            {multiSelect ? 'Choose videos to analyze.' : 'Choose a video to analyze.'}
+          </h1>
         </div>
-      </Card>
+        <div className="rounded-2xl border border-border bg-card p-8 flex flex-col items-center justify-center text-center gap-4">
+          <Film className="w-12 h-12 text-text-tertiary" />
+          <p className="text-base text-text-secondary">No videos in this index.</p>
+          <button
+            type="button"
+            onClick={fetchVideos}
+            disabled={isAnalyzing}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-text-secondary hover:text-foreground hover:bg-card transition-colors text-sm font-medium disabled:opacity-50"
+          >
+            {isAnalyzing ? 'Analysis in progress...' : 'Refresh'}
+          </button>
+        </div>
+      </div>
     );
   }
 
+  const sortedVideos = getSortedVideosForDisplay();
   return (
-    <Card className="w-full p-6">
-      <div className="flex justify-between items-center mb-6">
-        <Card.Title className="p-0 flex items-center">
-          <Play className="w-6 h-6 mr-2 text-primary" />
-          {multiSelect ? 'Select Videos for Analysis' : 'Select Video for Analysis'}
-        </Card.Title>
-        
-        <div className="flex items-center text-sm">
-          {multiSelect && (
-            <Button
-              onClick={handleSelectAll}
-              variant="outline"
-              size="sm"
-              className="mr-3"
-              disabled={isAnalyzing}
-            >
-              {selectedVideos.length === videos.length ? 'Deselect All' : 'Select All'}
-            </Button>
-          )}
-          <Button
-            onClick={fetchVideos}
-            variant="outline"
-            size="sm"
-            className="ml-3"
+    <div className="w-full space-y-8">
+      {/* Section header */}
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-mb-green-dark mb-3">
+          STEP 3 · VIDEOS
+        </p>
+        <h1 className="text-4xl lg:text-5xl font-bold tracking-tight text-foreground leading-[1.05] mb-3">
+          {multiSelect ? 'Choose videos to analyze.' : 'Choose a video to analyze.'}
+        </h1>
+        <p className="text-base lg:text-lg text-text-secondary max-w-2xl">
+          {videos.length} {videos.length === 1 ? 'video' : 'videos'}
+        </p>
+      </div>
+
+      {/* Toolbar: Select All + Refresh */}
+      <div className="flex items-center gap-2">
+        {multiSelect && (
+          <button
+            type="button"
+            onClick={handleSelectAll}
             disabled={isAnalyzing}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-text-secondary hover:text-foreground hover:bg-card transition-colors text-sm font-medium disabled:opacity-50"
           >
-            {isAnalyzing ? 'Analysis in progress...' : 'Refresh'}
-          </Button>
-        </div>
+            {selectedVideos.length === videos.length ? 'Deselect All' : 'Select All'}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={fetchVideos}
+          disabled={isAnalyzing}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-text-secondary hover:text-foreground hover:bg-card transition-colors text-sm font-medium disabled:opacity-50"
+        >
+          {isAnalyzing ? 'Analysis in progress...' : 'Refresh'}
+        </button>
       </div>
-      
-      {/* Show selected brands */}
-      {selectedBrands && selectedBrands.length > 0 && (
-        <div className="mb-6 p-3 bg-accent/20 rounded-lg border border-accent">
-          <Text as="p" className="text-sm font-medium text-foreground mb-2">
-            Selected Brands to Analyze:
-          </Text>
-          <div className="flex flex-wrap gap-2">
-            {selectedBrands.map((brand: string) => (
-              <Badge key={brand} variant="default" className="text-xs">
-                {brand}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
-            {getSortedVideosForDisplay().map((video) => {
-              const isSelected = multiSelect 
-                ? selectedVideos.includes(video.id)
-                : selectedVideo === video.id;
-              const selectionOrder = getSelectionOrder(video.id);
-              
-              return (
-          <Card
-                key={video.id}
-            className={`transition-all duration-200 p-4 relative ${
-              isAnalyzing 
-                ? 'cursor-not-allowed opacity-60'
-                : 'cursor-pointer'
-            } ${
-              isSelected
-                ? 'border-primary bg-accent/10 ring-2 ring-primary/20'
-                : !isAnalyzing ? 'hover:border-primary/50' : ''
-            }`}
-            onClick={() => !isAnalyzing && handleVideoSelect(video)}
-          >
+      {/* Video grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {sortedVideos.map((video) => {
+          const isSelected = multiSelect
+            ? selectedVideos.includes(video.id)
+            : selectedVideo === video.id;
+          const selectionOrder = getSelectionOrder(video.id);
 
-            
-            {/* Video preview */}
-            <div className="relative mb-3">
-              <VideoPreview
-                video={video}
-                onError={(error) => console.warn(`Video preview error for ${video.id}:`, error)}
-              />
-              
-              {/* Duration badge */}
-              {video.duration > 0 && (
-                <Badge className="absolute bottom-2 right-2" variant="default">
-                  {formatTime(video.duration)}
-                </Badge>
-              )}
+          // Thumbnail source: prefer direct thumbnail_url, fall back to first HLS thumbnail
+          const thumbnailSrc = video.thumbnail_url
+            || (video.hls?.thumbnail_urls && video.hls.thumbnail_urls.length > 0
+              ? video.hls.thumbnail_urls[0]
+              : null);
+
+          return (
+            <div
+              key={video.id}
+              onClick={() => !isAnalyzing && handleVideoSelect(video)}
+              className={`rounded-2xl border bg-card overflow-hidden transition hover:shadow-md ${
+                isAnalyzing ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+              } ${
+                isSelected
+                  ? 'border-2 border-mb-green ring-4 ring-mb-green/20'
+                  : 'border-border hover:border-mb-green/50'
+              }`}
+            >
+              {/* Thumbnail */}
+              <div className="relative aspect-video">
+                {thumbnailSrc ? (
+                  <img
+                    src={thumbnailSrc}
+                    alt={video.filename}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                    <Film className="w-10 h-10 text-gray-400" />
                   </div>
+                )}
 
-            {/* Video info */}
-            <div>
-              <Text as="h3" className="text-sm mb-2 line-clamp-2">
-                {video.filename}
-              </Text>
-              
-              <div className="space-y-1 text-xs text-muted-foreground">
-                <div className="flex items-center">
-                  <Clock className="w-3 h-3 mr-1" />
-                  <span>{video.duration > 0 ? formatTime(video.duration) : 'Unknown duration'}</span>
-                </div>
-                
-                <div className="flex items-center">
-                  <Calendar className="w-3 h-3 mr-1" />
-                  <span>
-                    {video.created_at !== 'Unknown' 
-                      ? new Date(video.created_at).toLocaleDateString()
-                      : 'Unknown date'
-                    }
+                {/* Duration badge */}
+                {video.duration > 0 && (
+                  <span className="absolute bottom-2 right-2 px-2 py-1 rounded-md bg-brand-charcoal/85 text-brand-white text-xs font-mono tabular-nums">
+                    {formatTime(video.duration)}
                   </span>
-                </div>
-                
-                    <div className="flex items-center">
-                  <div className={`w-2 h-2 rounded-full mr-1 ${
-                    video.status === 'ready' ? 'bg-green-500' : 'bg-yellow-500'
-                  }`} />
-                  <span className="capitalize">{video.status}</span>
-                </div>
-                    </div>
-                  </div>
-                  
-            {/* Selected indicator */}
-            {isSelected && (
-              <div className="mt-3 flex items-center justify-center">
-                <Badge variant="default">
-                  {multiSelect 
-                    ? `Selected (#${selectionOrder})`
-                    : 'Selected for Analysis'
-                  }
-                </Badge>
-              </div>
-            )}
-          </Card>
-              );
-            })}
-      </div>
-      
-      {((multiSelect && selectedVideos.length > 0) || (!multiSelect && selectedVideo)) && (
-        <Alert className="mt-6" variant="default">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-primary rounded-full mr-2 animate-pulse" />
-              <span className="font-medium">
-                {multiSelect 
-                  ? `Ready to analyze ${selectedVideos.length} selected video${selectedVideos.length > 1 ? 's' : ''} in order`
-                  : 'Ready to analyze selected video'
-                }
-              </span>
-            </div>
-            <span className="text-xs text-muted-foreground">
-              Click "Start Analysis" to proceed
-            </span>
-          </div>
-        </Alert>
-      )}
+                )}
 
-      {/* Start analysis button for single video mode */}
+                {/* Multi-select checkbox */}
+                {multiSelect && (
+                  <div
+                    className={`absolute top-2 left-2 w-6 h-6 rounded-md border-2 ${
+                      isSelected
+                        ? 'bg-mb-green border-mb-green'
+                        : 'bg-card/80 border-border'
+                    } flex items-center justify-center`}
+                  >
+                    {isSelected && (
+                      <Check className="w-3.5 h-3.5 text-brand-charcoal" strokeWidth={2.5} />
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Content */}
+              <div className="p-4">
+                <p className="text-sm font-semibold text-foreground line-clamp-2 mb-2">
+                  {video.filename}
+                </p>
+                <div className="flex items-center gap-3 text-xs text-text-secondary">
+                  {video.created_at !== 'Unknown' && (
+                    <span>{new Date(video.created_at).toLocaleDateString()}</span>
+                  )}
+                  {video.status && (
+                    <span className="flex items-center gap-1">
+                      <span
+                        className={`inline-block w-2 h-2 rounded-full ${
+                          video.status === 'ready' ? 'bg-mb-green' : 'bg-mb-orange'
+                        }`}
+                      />
+                      <span className="capitalize">{video.status}</span>
+                    </span>
+                  )}
+                  {multiSelect && isSelected && selectionOrder !== null && (
+                    <span className="ml-auto text-mb-green-dark font-semibold">
+                      #{selectionOrder}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Analyze Video CTA — single-select mode */}
       {!multiSelect && selectedVideo && onStartSingleAnalysis && (
-        <div className="mt-6 flex justify-center">
-          <Button
+        <div className="flex justify-end">
+          <button
+            type="button"
             onClick={onStartSingleAnalysis}
             disabled={isAnalyzing}
-            size="lg"
-            className="px-8"
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-mb-green text-brand-charcoal text-base font-semibold hover:bg-mb-green-dark hover:text-brand-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isAnalyzing ? 'Starting Analysis...' : 'Analyze Video'}
-          </Button>
+          </button>
         </div>
       )}
-    </Card>
+    </div>
   );
 };
 
